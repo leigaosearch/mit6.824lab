@@ -327,6 +327,7 @@ class rpcs : public chanmgr {
 	pthread_mutex_t count_m_;  //protect modification of counts
 	pthread_mutex_t reply_window_m_; // protect reply window et al
 	pthread_mutex_t conss_m_; // protect conns_
+        
 
 
 	protected:
