@@ -109,7 +109,6 @@ rpcc::rpcc(sockaddr_in d, bool retrans) :
   if(retrans){
     set_rand_seed();
     clt_nonce_ = random();
-    printf("clt_nonce_  %d\n",clt_nonce_);
   } else {
     // special client nonce 0 means this client does not 
     // require at-most-once logic from the server
@@ -149,8 +148,6 @@ rpcc::bind(TO to)
 {
   int r;
   int ret = call(rpc_const::bind, 0, r, to);
-  printf("rpcc::bind %s return %d\n", 
-        inet_ntoa(dst_.sin_addr), ret);
   if(ret == 0){
     ScopedLock ml(&m_);
     bind_done_ = true;
@@ -667,6 +664,7 @@ rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
   bool isForgtten = true;
   int cnt = reply_window_.count(clt_nonce);
   jsl_log(JSL_DBG_2, "checkduplicate_and_update xid=%u xid_rep=%u cnt=%d \n", xid,xid_rep,cnt);
+  auto ret = FORGOTTEN;
   if ( cnt != 0) {
     //done
     /*
@@ -674,15 +672,14 @@ rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
        reply_window_[clt_nonce].remove(r);
        }
        }*/ 
-    reply_window_[clt_nonce].remove_if([&](reply_t r) { return r.xid < xid_rep; }); 
     for(auto r:reply_window_[clt_nonce]) {
         if(r.xid == xid) {
             if(r.cb_present) {
               *b = r.buf;
               *sz = r.sz;
-              return DONE;
+              ret = DONE;
             } else {
-              return INPROGRESS;
+              ret = INPROGRESS;
             } 
         } 
         else if(r.xid < xid) {
@@ -693,17 +690,18 @@ rpcs::checkduplicate_and_update(unsigned int clt_nonce, unsigned int xid,
       reply_t r(xid);
       reply_window_[clt_nonce].push_back(r);
       jsl_log(JSL_DBG_2, "return New\n");
-      return NEW;
+      ret = NEW;
     }
   }
   else {
     reply_t r(xid);
     reply_window_[clt_nonce].push_back(r);
     jsl_log(JSL_DBG_1, "return New\n");
-    return NEW;
+    ret = NEW;
   }
   jsl_log(JSL_DBG_2, "return Forgot\n");
-  return FORGOTTEN;
+  reply_window_[clt_nonce].remove_if([&](reply_t r) { return r.xid < xid_rep; }); 
+  return ret;
 // You fill this in for Lab 1.
 }
 
@@ -722,7 +720,7 @@ rpcs::add_reply(unsigned int clt_nonce, unsigned int xid,
       e.sz = sz;
       e.buf = b;
       e.cb_present = true;
-    break;
+      break;
     }
   }
   // You fill this in for Lab 1.
