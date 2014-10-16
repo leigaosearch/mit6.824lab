@@ -37,6 +37,21 @@ int id() {
 // less correct values for the access/modify/change times
 // (atime, mtime, and ctime), and correct values for file sizes.
 //
+bool rrr = false;
+yfs_client::inum new_inum(bool file = true){
+  if(!rrr){
+    srand(time(NULL));
+    rrr= true;
+  }
+  unsigned int i = rand();
+  if (file){
+    i = i | 0x80000000;    
+  } else {
+    i = i & 0x7FFFFFFF;
+  }
+//   printf("inum danach: %i",i);
+  return i;
+}
 yfs_client::status
 getattr(yfs_client::inum inum, struct stat &st)
 {
@@ -215,13 +230,55 @@ yfs_client::status
 fuseserver_createhelper(fuse_ino_t parent, const char *name,
                         mode_t mode, struct fuse_entry_param *e)
 {
-  // In yfs, timeouts are always set to 0.0, and generations are always set to 0
-  e->attr_timeout = 0.0;
-  e->entry_timeout = 0.0;
-  e->generation = 0;
-  // You fill this in for Lab 2
+printf("fuseserver_createhelper namee: %s\n",name);
+
+  if( yfs->isdir(parent) )
+  {
+    std::string content;
+    yfs->getdirdata(parent, content);
+
+    yfs_client::inum inum = new_inum();
+
+    content.append(name);
+    content.append("/");
+    content.append(yfs->filename(inum)); //(value, string&, base)
+    content.append("//");
+
+    printf("  seserver_createhelper: data= zu lang");// %s\n", content.c_str());
+
+
+    yfs_client::inum ii = parent;
+
+    printf(" parent %016llx \n", ii);
+    yfs->put(ii,content);
+    yfs->put(inum,"");
+
+    //set entry parameters
+    yfs->put(inum,"");    
+    e->attr_timeout = 0.0;
+    e->entry_timeout = 0.0;
+    e->ino = inum;
+    getattr(e->ino, e->attr);
+
+    /*
+    //test insertion TODO remove
+    //get data
+    std::string data;
+    yfs->getdirdata(inum, data);
+    printf("   reatetestdata = %s\n",data.c_str());
+    */
+
+    printf("  seserver_createhelper: wrote data\n");
+    return yfs_client::OK;
+  }
+
+  printf("  seserver_createhelper !! parent is NOT A DIR\n");
+
+  // You fill this in
   return yfs_client::NOENT;
 }
+
+
 
 void
 fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,

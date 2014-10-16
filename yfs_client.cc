@@ -16,7 +16,7 @@ yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 
 }
 
-yfs_client::inum
+  yfs_client::inum
 yfs_client::n2i(std::string n)
 {
   std::istringstream ist(n);
@@ -25,7 +25,7 @@ yfs_client::n2i(std::string n)
   return finum;
 }
 
-std::string
+  std::string
 yfs_client::filename(inum inum)
 {
   std::ostringstream ost;
@@ -33,7 +33,7 @@ yfs_client::filename(inum inum)
   return ost.str();
 }
 
-bool
+  bool
 yfs_client::isfile(inum inum)
 {
   if(inum & 0x80000000)
@@ -41,13 +41,13 @@ yfs_client::isfile(inum inum)
   return false;
 }
 
-bool
+  bool
 yfs_client::isdir(inum inum)
 {
   return ! isfile(inum);
 }
 
-int
+  int
 yfs_client::getfile(inum inum, fileinfo &fin)
 {
   int r = OK;
@@ -65,12 +65,12 @@ yfs_client::getfile(inum inum, fileinfo &fin)
   fin.size = a.size;
   printf("getfile %016llx -> sz %llu\n", inum, fin.size);
 
- release:
+release:
 
   return r;
 }
 
-int
+  int
 yfs_client::getdir(inum inum, dirinfo &din)
 {
   int r = OK;
@@ -85,9 +85,41 @@ yfs_client::getdir(inum inum, dirinfo &din)
   din.mtime = a.mtime;
   din.ctime = a.ctime;
 
- release:
+release:
   return r;
 }
 
 
+int yfs_client::getdirdata(inum inum, std::string & content){
+
+  int r = yfs_client::OK;
+  printf("getdirdata %016llx\n", inum);
+
+  ;
+
+  if (ec->get(inum, content) != extent_protocol::OK) {
+
+    r = IOERR;
+
+    goto release;
+
+  }
+  printf("getdirdata %016llx -> sz %u\n", inum, content.size() );
+release:
+  return r;
+}
+
+int yfs_client::put(inum inum, std::string content){
+
+  int r = OK;
+  printf("put %016llx\n", inum);
+  if (ec->put(inum, content) != extent_protocol::OK) {
+    r = IOERR;
+    goto release;
+  }
+  printf("put %016llx -> sz %u\n", inum, content.size() );
+
+release:
+  return r;  
+}
 

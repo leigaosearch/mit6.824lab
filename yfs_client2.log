@@ -1,0 +1,43 @@
+FUSE library version: 2.9.2
+unique: 1, opcode: INIT (26), nodeid: 0, insize: 56, pid: 0
+INIT: 7.22
+flags=0x0000f7fb
+max_readahead=0x00020000
+   INIT: 7.19
+   flags=0x00000000
+   max_readahead=0x00020000
+   max_write=0x00020000
+   max_background=0
+   congestion_threshold=0
+   unique: 1, success, outsize: 40
+unique: 2, opcode: LOOKUP (1), nodeid: 1, insize: 47, pid: 2527
+   unique: 2, error: -2 (No such file or directory), outsize: 16
+unique: 3, opcode: LOOKUP (1), nodeid: 1, insize: 52, pid: 2527
+   unique: 3, error: -2 (No such file or directory), outsize: 16
+unique: 4, opcode: OPENDIR (27), nodeid: 1, insize: 48, pid: 1877
+   unique: 4, success, outsize: 32
+unique: 5, opcode: READDIR (28), nodeid: 1, insize: 80, pid: 1877
+fuseserver_readdir
+   unique: 5, success, outsize: 16
+unique: 6, opcode: RELEASEDIR (29), nodeid: 1, insize: 64, pid: 0
+   unique: 6, success, outsize: 16
+unique: 7, opcode: GETATTR (3), nodeid: 1, insize: 56, pid: 1878
+getattr 0000000000000001 0
+getdir 0000000000000001
+   getattr -> 1413448542 1413448542 1413448542
+   unique: 7, success, outsize: 120
+unique: 8, opcode: LOOKUP (1), nodeid: 1, insize: 45, pid: 1880
+   unique: 8, error: -2 (No such file or directory), outsize: 16
+unique: 9, opcode: LOOKUP (1), nodeid: 1, insize: 45, pid: 1880
+   unique: 9, error: -2 (No such file or directory), outsize: 16
+unique: 10, opcode: LOOKUP (1), nodeid: 1, insize: 45, pid: 1880
+   unique: 10, error: -2 (No such file or directory), outsize: 16
+unique: 11, opcode: LOOKUP (1), nodeid: 1, insize: 45, pid: 1880
+   unique: 11, error: -2 (No such file or directory), outsize: 16
+unique: 12, opcode: OPENDIR (27), nodeid: 1, insize: 48, pid: 1880
+   unique: 12, success, outsize: 32
+unique: 13, opcode: READDIR (28), nodeid: 1, insize: 80, pid: 1880
+fuseserver_readdir
+   unique: 13, success, outsize: 16
+unique: 14, opcode: RELEASEDIR (29), nodeid: 1, insize: 64, pid: 0
+   unique: 14, success, outsize: 16

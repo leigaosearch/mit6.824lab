@@ -32,17 +32,17 @@ class yfs_client {
   };
 
  private:
-  static std::string filename(inum);
   static inum n2i(std::string);
  public:
 
+  static std::string filename(inum);
   yfs_client(std::string, std::string);
-
   bool isfile(inum);
   bool isdir(inum);
-
   int getfile(inum, fileinfo &);
   int getdir(inum, dirinfo &);
+  int getdirdata(inum, std::string &);
+  int put(inum,std::string); 
 };
 
 #endif 
