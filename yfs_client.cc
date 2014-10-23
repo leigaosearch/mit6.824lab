@@ -55,6 +55,7 @@ yfs_client::getfile(inum inum, fileinfo &fin)
   printf("getfile %016llx\n", inum);
   extent_protocol::attr a;
   if (ec->getattr(inum, a) != extent_protocol::OK) {
+    printf("IO ERROR\n");
     r = IOERR;
     goto release;
   }
@@ -68,6 +69,35 @@ yfs_client::getfile(inum inum, fileinfo &fin)
 release:
 
   return r;
+}
+int 
+yfs_client::setattr(inum inum, fileinfo &fin) {
+  int r = OK;
+  std::string file_buf;
+  extent_protocol::attr a;
+  if (ec->getattr(inum, a) != extent_protocol::OK) {
+    r = IOERR;
+  }
+  if (fin.size == 0) {
+    if (ec->put(inum, file_buf) != extent_protocol::OK) {
+      r = IOERR;
+      return r;
+    }
+  } else {
+    if (ec->put(inum, file_buf) != extent_protocol::OK) {
+      r = IOERR;
+      return r;
+    }
+  }
+  if (fin.size < a.size) {
+    file_buf.assign((a.size - fin.size), '\0');
+    r = write(inum, file_buf, fin.size, (a.size - fin.size));
+  } else if (fin.size > a.size) {
+    r = write(inum, file_buf, a.size, (fin.size - a.size));
+
+  }
+  r = OK;
+
 }
 
   int
@@ -95,14 +125,9 @@ int yfs_client::getdirdata(inum inum, std::string & content){
   int r = yfs_client::OK;
   printf("getdirdata %016llx\n", inum);
 
-  ;
-
   if (ec->get(inum, content) != extent_protocol::OK) {
-
     r = IOERR;
-
     goto release;
-
   }
   printf("getdirdata %016llx -> sz %u\n", inum, content.size() );
 release:
@@ -110,7 +135,6 @@ release:
 }
 
 int yfs_client::put(inum inum, std::string content){
-
   int r = OK;
   printf("put %016llx\n", inum);
   if (ec->put(inum, content) != extent_protocol::OK) {
@@ -123,3 +147,58 @@ release:
   return r;  
 }
 
+  yfs_client::status
+yfs_client::read(inum inum, std::string &buf, size_t nbytes, off_t offset)
+{
+  int r = OK;
+  fileinfo fin;
+  if (getfile(inum,fin) != OK) {
+    r = IOERR;
+    return r;
+  }
+  size_t size = fin.size;
+  if(offset > fin.size) {
+    buf = '\0';
+    r = OK;
+    return r;
+  }
+  if ((offset + nbytes) > fin.size) {
+    size = fin.size -offset;
+  }
+  std::string buf1;
+  if (ec->get(inum, buf1) == extent_protocol::OK) {
+    buf1.resize(offset,size);
+    buf = buf1;
+    return r;
+  }
+  else 
+    return IOERR;
+
+}
+
+yfs_client::status
+yfs_client::write(inum inum, std::string buf, size_t nbytes, off_t off)
+{
+  std::string file_buf = buf; 
+  int r = OK;
+  size_t size = 0;
+  fileinfo fin;
+  if (getfile(inum, fin) != OK) {
+    r = IOERR;
+    return r;
+  }
+  if (off > fin.size) {
+    file_buf.assign((off - fin.size), '\0');
+    size = size + off - fin.size;
+    off = fin.size;
+    buf.resize(size);
+  }
+  if (ec->put(inum, file_buf) != extent_protocol::OK) {
+    r = IOERR;
+    return r;
+  }
+
+  r = OK;
+
+  return r;
+}

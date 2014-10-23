@@ -22,7 +22,9 @@ class extent_server {
     std::string data;
     extent_protocol::attr attr;
   };
-  std::map<extent_protocol::extentid_t, std::shared_ptr<extent_value>> extentobjs;
+  std::map<extent_protocol::extentid_t, std::string> files;
+  //std::map<extent_protocol::extentid_t, std::shared_ptr<extent_value>> extentobjs;
+  std::map<extent_protocol::extentid_t, extent_protocol::attr> extentattrs;
 };
 
 #endif 

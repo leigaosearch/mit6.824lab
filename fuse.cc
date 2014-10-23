@@ -137,11 +137,26 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
                    int to_set, struct fuse_file_info *fi)
 {
   printf("fuseserver_setattr 0x%x\n", to_set);
+  yfs_client::inum inum = ino;
+  yfs_client::fileinfo info;
+  yfs_client::status ret;
   if (FUSE_SET_ATTR_SIZE & to_set) {
     printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
     struct stat st;
     // You fill this in for Lab 2
-#if 0
+#if 1
+    info.size = attr->st_size;
+    ret = yfs->setattr(inum, info);
+    if (ret != yfs_client::OK) {
+      fuse_reply_err(req, ENOENT);
+      return;
+    }
+    
+    ret = getattr(inum, st);
+    if(ret != yfs_client::OK) {
+      fuse_reply_err(req, ENOENT);
+      return;
+    }
     // Change the above line to "#if 1", and your code goes here
     // Note: fill st using getattr before fuse_reply_attr
     fuse_reply_attr(req, &st, 0);
@@ -170,10 +185,24 @@ fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
                 off_t off, struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
-#if 0
+  yfs_client::inum inum = ino;
   std::string buf;
+  if (yfs->isfile(inum)) {
+    yfs_client::fileinfo fin;
+    if(yfs->getfile(inum, fin) == yfs_client::OK) {
+      if (off < 0 || off >= fin.size) {
+        fuse_reply_err(req, EINVAL);
+      }
+      else {
+        if (yfs->read(inum,buf,size,off) == yfs_client::OK) {
+            fuse_reply_buf(req, buf.data(), buf.size());
+        }
+      }
+    }
+  }
+  fuse_reply_err(req, ENOSYS);
+#if 1
   // Change the above "#if 0" to "#if 1", and your code goes here
-  fuse_reply_buf(req, buf.data(), buf.size());
 #else
   fuse_reply_err(req, ENOSYS);
 #endif
@@ -244,7 +273,7 @@ printf("fuseserver_createhelper namee: %s\n",name);
     content.append(yfs->filename(inum)); //(value, string&, base)
     content.append("//");
 
-    printf("  seserver_createhelper: data= zu lang");// %s\n", content.c_str());
+    printf("  seserver_createhelper: data= zu lang%s", content.c_str());
 
 
     yfs_client::inum ii = parent;
