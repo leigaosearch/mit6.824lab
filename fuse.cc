@@ -229,6 +229,17 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
                  struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
+  yfs_client::inum inum = ino;
+  yfs_client::fileinfo info;
+  yfs_client::status ret;
+  if (yfs->isfile(inum)) {
+    if(((ret = yfs->write(inum,buf,off,size))) != yfs_client::OK) {
+    fuse_reply_err(req, ENOSYS);
+    }
+    fuse_reply_write(req,size);
+
+  }
+
 #if 0
   // Change the above line to "#if 1", and your code goes here
   fuse_reply_write(req, size);

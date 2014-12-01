@@ -179,7 +179,7 @@ yfs_client::read(inum inum, std::string &buf, size_t nbytes, off_t offset)
 yfs_client::status
 yfs_client::write(inum inum, std::string buf, size_t nbytes, off_t off)
 {
-  std::string file_buf = buf; 
+  std::string file_buf = buf;
   int r = OK;
   size_t size = 0;
   fileinfo fin;
