@@ -6,7 +6,7 @@
  * high-level interface only gives us complete paths.
  */
 
-#include <fuse_lowlevel.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -15,8 +15,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <fuse_lowlevel.h>
 #include "lang/verify.h"
 #include "yfs_client.h"
+using namespace std;
 
 int myid;
 yfs_client *yfs;
@@ -270,49 +272,44 @@ yfs_client::status
 fuseserver_createhelper(fuse_ino_t parent, const char *name,
                         mode_t mode, struct fuse_entry_param *e)
 {
-printf("fuseserver_createhelper namee: %s\n",name);
-
+  printf("fuseserver_createhelper name: %s\n",name);
   if( yfs->isdir(parent) )
   {
     std::string content;
     yfs->getdirdata(parent, content);
+    std::cout << "parent: " << content << std::endl;
 
     yfs_client::inum inum = new_inum();
 
+    content.append(" ");
     content.append(name);
-    content.append("/");
+    content.append(" ");
     content.append(yfs->filename(inum)); //(value, string&, base)
-    content.append("//");
-
-    printf("  seserver_createhelper: data= zu lang%s", content.c_str());
+    content.append(" ");
+    //printf("  seserver_createhelper: data= zu lang%s", content.c_str());
 
 
     yfs_client::inum ii = parent;
 
-    printf(" parent %016llx \n", ii);
+    printf("parent %016llx \n", ii);
     yfs->put(ii,content);
     yfs->put(inum,"");
 
     //set entry parameters
-    yfs->put(inum,"");    
     e->attr_timeout = 0.0;
     e->entry_timeout = 0.0;
     e->ino = inum;
     getattr(e->ino, e->attr);
 
-    /*
     //test insertion TODO remove
     //get data
     std::string data;
     yfs->getdirdata(inum, data);
     printf("   reatetestdata = %s\n",data.c_str());
-    */
-
-    printf("  seserver_createhelper: wrote data\n");
     return yfs_client::OK;
   }
 
-  printf("  seserver_createhelper !! parent is NOT A DIR\n");
+  //printf("  seserver_createhelper !! parent is NOT A DIR\n");
 
   // You fill this in
   return yfs_client::NOENT;
@@ -327,11 +324,15 @@ fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,
   struct fuse_entry_param e;
   yfs_client::status ret;
   if( (ret = fuseserver_createhelper( parent, name, mode, &e )) == yfs_client::OK ) {
+    std::cout<<parent<<name<<mode<<endl;;
     fuse_reply_create(req, &e, fi);
   } else {
 		if (ret == yfs_client::EXIST) {
+                  std::cout<<"create error EEXIST"<<endl;
 			fuse_reply_err(req, EEXIST);
 		}else{
+
+                  std::cout<<"create error ENOENT"<<endl;
 			fuse_reply_err(req, ENOENT);
 		}
   }
@@ -347,6 +348,7 @@ void fuseserver_mknod( fuse_req_t req, fuse_ino_t parent,
 		if (ret == yfs_client::EXIST) {
 			fuse_reply_err(req, EEXIST);
 		}else{
+                  printf("node exist\n");
 			fuse_reply_err(req, ENOENT);
 		}
   }
@@ -366,6 +368,18 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   e.entry_timeout = 0.0;
   e.generation = 0;
   bool found = false;
+  yfs_client::status ret;
+  yfs_client::inum p_inum = parent;
+  yfs_client::inum c_inum;
+  printf("fuseserver_lookup parent:%016lx name:%s\n", parent, name);  
+  ret = yfs->lookup(p_inum, name, c_inum);
+  if (ret == yfs_client::OK) {
+     struct stat st;
+     e.ino = c_inum;
+     if(getattr(c_inum, st) == yfs_client::OK)
+        e.attr = st;
+     found = true;
+  }
 
   // You fill this in for Lab 2
   if (found)
@@ -425,7 +439,26 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
     return;
   }
 
+
+
   memset(&b, 0, sizeof(b));
+   // get directory contents
+  std::string retrieve;
+  yfs->getdirdata(ino, retrieve);
+  
+  // add file names to directory one by one
+  while(retrieve.length() > 0){
+    std::string file = retrieve.substr(0, retrieve.find(" "));
+    
+    printf("file added %s\n ", file.c_str());
+    dirbuf_add(&b, file.c_str(), ino);
+    index = retrieve.find(" ");
+    retrieve = retrieve.substr(index + 1, retrieve.length());
+    index = retrieve.find(" ");
+    retrieve = retrieve.substr(index + 1, retrieve.length());
+  }
+  
+
 
 
   // You fill this in for Lab 2

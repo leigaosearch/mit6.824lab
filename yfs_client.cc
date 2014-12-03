@@ -109,6 +109,7 @@ yfs_client::getdir(inum inum, dirinfo &din)
   extent_protocol::attr a;
   if (ec->getattr(inum, a) != extent_protocol::OK) {
     r = IOERR;
+    printf("getdir error and got rlease \n");
     goto release;
   }
   din.atime = a.atime;
@@ -116,6 +117,7 @@ yfs_client::getdir(inum inum, dirinfo &din)
   din.ctime = a.ctime;
 
 release:
+    printf("getdir return OK \n");
   return r;
 }
 
@@ -129,7 +131,7 @@ int yfs_client::getdirdata(inum inum, std::string & content){
     r = IOERR;
     goto release;
   }
-  printf("getdirdata %016llx -> sz %u\n", inum, content.size() );
+  printf("getdirdata %016llx -> sz %d\n", inum, content.size() );
 release:
   return r;
 }
@@ -201,4 +203,40 @@ yfs_client::write(inum inum, std::string buf, size_t nbytes, off_t off)
   r = OK;
 
   return r;
+}
+int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
+  int r = OK, count = 0;
+  std::string p_buf, inum_buf;
+  char *cstr, *p;
+  inum curr_inum;
+// Read Parent Dir and check if name already exists
+  if (ec->get(p_inum, p_buf) != extent_protocol::OK) {
+      printf("yfs_client:lookup, get NOENT for %016llx\n", p_inum);
+     r = NOENT;
+     goto release;
+  }
+  cstr = new char[p_buf.size()+1];
+  strcpy(cstr, p_buf.c_str());
+  p=strtok (cstr, "/");
+  while (p!=NULL) {
+    // Skip its own dir name & inum
+    if(count!=1 && count%2 == 1) {
+	if((strlen(p) == strlen(name)) && (!strncmp(p, name, strlen(name)))) {
+         delete[] cstr;
+         r = OK;
+	 c_inum = curr_inum;
+         goto release;
+      }
+    }
+    else {
+      inum_buf = p;
+      curr_inum = n2i(inum_buf);
+    }
+  p=strtok(NULL,"/");
+  count++;
+  }
+  delete[] cstr;
+  r = NOENT; 
+  release:
+    return r;
 }

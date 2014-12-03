@@ -46,6 +46,7 @@ class yfs_client {
   int setattr(inum inum, fileinfo &fin);
   status read(inum inum, std::string &buf, size_t nbytes, off_t offset);
   status write(inum inum, std::string buf, size_t nbytes, off_t offset);
+  int lookup(inum p_inum, const char *name, inum &c_inum);
 };
 
 #endif 
