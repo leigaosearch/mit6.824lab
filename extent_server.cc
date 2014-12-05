@@ -20,6 +20,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   auto t = time(NULL);
   printf("put id = %llu\n",id);
   if (num == 0) {
+  printf("create = %llu\n",id);
     extent_protocol::attr a;
     a.ctime = t;
     a.mtime = t;
@@ -39,6 +40,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   }
 
   files[id] = buf;
+  printf("%s",buf.c_str());
   return extent_protocol::OK;
 }
 

@@ -44,8 +44,8 @@ class yfs_client {
   int getdirdata(inum, std::string &);
   int put(inum,std::string); 
   int setattr(inum inum, fileinfo &fin);
-  status read(inum inum, std::string &buf, size_t nbytes, off_t offset);
-  status write(inum inum, std::string buf, size_t nbytes, off_t offset);
+  status read(inum inum, std::string &buf, off_t offset, size_t nbytes);
+  status write(inum inum, std::string buf,  off_t offset, size_t nbytes);
   int lookup(inum p_inum, const char *name, inum &c_inum);
 };
 
