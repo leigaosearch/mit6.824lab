@@ -1,0 +1,161 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+CLOCK_MONOTONIC	./gettime.cc	/^	CLOCK_MONOTONIC,$/;"	e	enum:__anon1	file:
+CLOCK_MONOTONIC	./gettime.h	/^	CLOCK_MONOTONIC,$/;"	e	enum:__anon2
+CLOCK_PROCESS_CPUTIME_ID	./gettime.cc	/^	CLOCK_PROCESS_CPUTIME_ID,$/;"	e	enum:__anon1	file:
+CLOCK_PROCESS_CPUTIME_ID	./gettime.h	/^	CLOCK_PROCESS_CPUTIME_ID,$/;"	e	enum:__anon2
+CLOCK_REALTIME	./gettime.cc	/^	CLOCK_REALTIME,$/;"	e	enum:__anon1	file:
+CLOCK_REALTIME	./gettime.h	/^	CLOCK_REALTIME,$/;"	e	enum:__anon2
+CLOCK_THREAD_CPUTIME_ID	./gettime.cc	/^	CLOCK_THREAD_CPUTIME_ID$/;"	e	enum:__anon1	file:
+CLOCK_THREAD_CPUTIME_ID	./gettime.h	/^	CLOCK_THREAD_CPUTIME_ID$/;"	e	enum:__anon2
+EXIST	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	e	enum:yfs_client::xxstatus
+IOERR	./extent_protocol.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR };$/;"	e	enum:extent_protocol::xxstatus
+IOERR	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	e	enum:lock_protocol::xxstatus
+IOERR	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	e	enum:yfs_client::xxstatus
+NOENT	./extent_protocol.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR };$/;"	e	enum:extent_protocol::xxstatus
+NOENT	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	e	enum:lock_protocol::xxstatus
+NOENT	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	e	enum:yfs_client::xxstatus
+OK	./extent_protocol.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR };$/;"	e	enum:extent_protocol::xxstatus
+OK	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	e	enum:lock_protocol::xxstatus
+OK	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	e	enum:yfs_client::xxstatus
+RETRY	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	e	enum:lock_protocol::xxstatus
+RPCERR	./extent_protocol.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR };$/;"	e	enum:extent_protocol::xxstatus
+RPCERR	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	e	enum:lock_protocol::xxstatus
+RPCERR	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	e	enum:yfs_client::xxstatus
+__clock_gettime_inf	./gettime.cc	/^static mach_timebase_info_data_t __clock_gettime_inf;$/;"	v	file:
+a	./lock_tester.cc	/^lock_protocol::lockid_t a = 1;$/;"	v
+acquire	./lock_client.cc	/^lock_client::acquire(lock_protocol::lockid_t lid)$/;"	f	class:lock_client
+acquire	./lock_protocol.h	/^    acquire = 0x7001,$/;"	e	enum:lock_protocol::rpc_numbers
+acquire	./lock_server.cc	/^lock_server::acquire(int clt,lock_protocol::lockid_t lid, int &r)$/;"	f	class:lock_server
+atime	./extent_protocol.h	/^    unsigned int atime;$/;"	m	struct:extent_protocol::attr
+atime	./yfs_client.h	/^    unsigned long atime;$/;"	m	struct:yfs_client::dirinfo
+atime	./yfs_client.h	/^    unsigned long atime;$/;"	m	struct:yfs_client::fileinfo
+attr	./extent_protocol.h	/^  struct attr {$/;"	s	class:extent_protocol
+attr	./extent_server.h	/^    extent_protocol::attr attr;$/;"	m	struct:extent_server::extent_value
+b	./lock_tester.cc	/^lock_protocol::lockid_t b = 2;$/;"	v
+c	./lock_tester.cc	/^lock_protocol::lockid_t c = 3;$/;"	v
+check_grant	./lock_tester.cc	/^check_grant(lock_protocol::lockid_t lid)$/;"	f
+check_release	./lock_tester.cc	/^check_release(lock_protocol::lockid_t lid)$/;"	f
+cl	./extent_client.h	/^  rpcc *cl;$/;"	m	class:extent_client
+cl	./lock_client.h	/^  rpcc *cl;$/;"	m	class:lock_client
+clock_gettime	./gettime.cc	/^int clock_gettime(clockid_t clk_id, struct timespec *tp) {$/;"	f
+clock_gettime	./gettime.cc	65;"	d	file:
+clockid_t	./gettime.cc	/^} clockid_t;$/;"	t	typeref:enum:__anon1	file:
+clockid_t	./gettime.h	/^} clockid_t;$/;"	t	typeref:enum:__anon2
+cond	./lock_server.h	/^  std::condition_variable cond;$/;"	m	class:lock_server
+count_mutex	./lock_tester.cc	/^pthread_mutex_t count_mutex;$/;"	v
+ct	./lock_tester.cc	/^int ct[256];$/;"	v
+ctime	./extent_protocol.h	/^    unsigned int ctime;$/;"	m	struct:extent_protocol::attr
+ctime	./yfs_client.h	/^    unsigned long ctime;$/;"	m	struct:yfs_client::dirinfo
+ctime	./yfs_client.h	/^    unsigned long ctime;$/;"	m	struct:yfs_client::fileinfo
+cv_mutex	./lock_server.h	/^  std::mutex cv_mutex;$/;"	m	class:lock_server
+data	./extent_server.h	/^    std::string data;$/;"	m	struct:extent_server::extent_value
+dirent	./yfs_client.h	/^  struct dirent {$/;"	s	class:yfs_client
+dirinfo	./yfs_client.h	/^  struct dirinfo {$/;"	s	class:yfs_client
+dst	./lock_demo.cc	/^std::string dst;$/;"	v
+dst	./lock_tester.cc	/^std::string dst;$/;"	v
+ec	./yfs_client.h	/^  extent_client *ec;$/;"	m	class:yfs_client
+extent_client	./extent_client.cc	/^extent_client::extent_client(std::string dst)$/;"	f	class:extent_client
+extent_client	./extent_client.h	/^class extent_client {$/;"	c
+extent_client_h	./extent_client.h	4;"	d
+extent_protocol	./extent_protocol.h	/^class extent_protocol {$/;"	c
+extent_protocol_h	./extent_protocol.h	4;"	d
+extent_server	./extent_server.cc	/^extent_server::extent_server() {}$/;"	f	class:extent_server
+extent_server	./extent_server.h	/^class extent_server {$/;"	c
+extent_server_h	./extent_server.h	4;"	d
+extent_value	./extent_server.h	/^  struct extent_value {$/;"	s	class:extent_server
+extentattrs	./extent_server.h	/^  std::map<extent_protocol::extentid_t, extent_protocol::attr> extentattrs;$/;"	m	class:extent_server
+extentid_t	./extent_protocol.h	/^  typedef unsigned long long extentid_t;$/;"	t	class:extent_protocol
+fileinfo	./yfs_client.h	/^  struct fileinfo {$/;"	s	class:yfs_client
+filename	./yfs_client.cc	/^yfs_client::filename(inum inum)$/;"	f	class:yfs_client
+files	./extent_server.h	/^  std::map<extent_protocol::extentid_t, std::string> files;$/;"	m	class:extent_server
+fuseserver_getattr	./fuse.cc	/^fuseserver_getattr(fuse_req_t req, fuse_ino_t ino,$/;"	f
+fuseserver_read	./fuse.cc	/^fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,$/;"	f
+fuseserver_setattr	./fuse.cc	/^fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,$/;"	f
+get	./extent_client.cc	/^extent_client::get(extent_protocol::extentid_t eid, std::string &buf)$/;"	f	class:extent_client
+get	./extent_protocol.h	/^    get,$/;"	e	enum:extent_protocol::rpc_numbers
+get	./extent_server.cc	/^int extent_server::get(extent_protocol::extentid_t id, std::string &buf)$/;"	f	class:extent_server
+getattr	./extent_client.cc	/^extent_client::getattr(extent_protocol::extentid_t eid, $/;"	f	class:extent_client
+getattr	./extent_protocol.h	/^    getattr,$/;"	e	enum:extent_protocol::rpc_numbers
+getattr	./extent_server.cc	/^int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr &a)$/;"	f	class:extent_server
+getattr	./fuse.cc	/^getattr(yfs_client::inum inum, struct stat &st)$/;"	f
+getdir	./yfs_client.cc	/^yfs_client::getdir(inum inum, dirinfo &din)$/;"	f	class:yfs_client
+getdirdata	./yfs_client.cc	/^int yfs_client::getdirdata(inum inum, std::string & content){$/;"	f	class:yfs_client
+getfile	./yfs_client.cc	/^yfs_client::getfile(inum inum, fileinfo &fin)$/;"	f	class:yfs_client
+gettime_h	./gettime.h	2;"	d
+id	./fuse.cc	/^int id() { $/;"	f
+inum	./yfs_client.h	/^    yfs_client::inum inum;$/;"	m	struct:yfs_client::dirent
+inum	./yfs_client.h	/^  typedef unsigned long long inum;$/;"	t	class:yfs_client
+isdir	./yfs_client.cc	/^yfs_client::isdir(inum inum)$/;"	f	class:yfs_client
+isfile	./yfs_client.cc	/^yfs_client::isfile(inum inum)$/;"	f	class:yfs_client
+kfree	./lock_server.h	/^const int kfree = 0;$/;"	v
+klocked	./lock_server.h	/^const int klocked = 1;$/;"	v
+lc	./lock_demo.cc	/^lock_client *lc;$/;"	v
+lc	./lock_tester.cc	/^lock_client **lc = new lock_client * [nt];$/;"	v
+lock_client	./lock_client.cc	/^lock_client::lock_client(std::string dst)$/;"	f	class:lock_client
+lock_client	./lock_client.h	/^class lock_client {$/;"	c
+lock_client_h	./lock_client.h	4;"	d
+lock_protocol	./lock_protocol.h	/^class lock_protocol {$/;"	c
+lock_protocol_h	./lock_protocol.h	4;"	d
+lock_server	./lock_server.cc	/^lock_server::lock_server():$/;"	f	class:lock_server
+lock_server	./lock_server.h	/^class lock_server {$/;"	c
+lock_server_h	./lock_server.h	5;"	d
+lock_table_	./lock_server.h	/^  std::map<lock_protocol::lockid_t,  lock_protocol::status> lock_table_;$/;"	m	class:lock_server
+locked	./lock_server.h	/^  bool locked = false;$/;"	m	class:lock_server
+lockid_t	./lock_protocol.h	/^  typedef unsigned long long lockid_t;$/;"	t	class:lock_protocol
+main	./extent_smain.cc	/^main(int argc, char *argv[])$/;"	f
+main	./lock_demo.cc	/^main(int argc, char *argv[])$/;"	f
+main	./lock_smain.cc	/^main(int argc, char *argv[])$/;"	f
+main	./lock_tester.cc	/^main(int argc, char *argv[])$/;"	f
+min	./fuse.cc	380;"	d	file:
+mtime	./extent_protocol.h	/^    unsigned int mtime;$/;"	m	struct:extent_protocol::attr
+mtime	./yfs_client.h	/^    unsigned long mtime;$/;"	m	struct:yfs_client::dirinfo
+mtime	./yfs_client.h	/^    unsigned long mtime;$/;"	m	struct:yfs_client::fileinfo
+myid	./fuse.cc	/^int myid;$/;"	v
+n2i	./yfs_client.cc	/^yfs_client::n2i(std::string n)$/;"	f	class:yfs_client
+nacquire	./lock_server.h	/^  int nacquire;  $/;"	m	class:lock_server
+name	./yfs_client.h	/^    std::string name;$/;"	m	struct:yfs_client::dirent
+new_inum	./fuse.cc	/^yfs_client::inum new_inum(bool file = true){$/;"	f
+nt	./lock_tester.cc	/^int nt = 6; \/\/XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.$/;"	v
+operator <<	./extent_protocol.h	/^operator<<(marshall &m, extent_protocol::attr a)$/;"	f
+operator >>	./extent_protocol.h	/^operator>>(unmarshall &u, extent_protocol::attr &a)$/;"	f
+put	./extent_client.cc	/^extent_client::put(extent_protocol::extentid_t eid, std::string buf)$/;"	f	class:extent_client
+put	./extent_protocol.h	/^    put = 0x6001,$/;"	e	enum:extent_protocol::rpc_numbers
+put	./extent_server.cc	/^int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)$/;"	f	class:extent_server
+put	./yfs_client.cc	/^int yfs_client::put(inum inum, std::string content){$/;"	f	class:yfs_client
+release	./lock_client.cc	/^lock_client::release(lock_protocol::lockid_t lid)$/;"	f	class:lock_client
+release	./lock_protocol.h	/^    release,$/;"	e	enum:lock_protocol::rpc_numbers
+release	./lock_server.cc	/^lock_server::release(int clt,lock_protocol::lockid_t lid, int &r)$/;"	f	class:lock_server
+remove	./extent_client.cc	/^extent_client::remove(extent_protocol::extentid_t eid)$/;"	f	class:extent_client
+remove	./extent_protocol.h	/^    remove$/;"	e	enum:extent_protocol::rpc_numbers
+remove	./extent_server.cc	/^int extent_server::remove(extent_protocol::extentid_t id, int &)$/;"	f	class:extent_server
+rpc_numbers	./extent_protocol.h	/^  enum rpc_numbers {$/;"	g	class:extent_protocol
+rpc_numbers	./lock_protocol.h	/^  enum rpc_numbers {$/;"	g	class:lock_protocol
+rrr	./fuse.cc	/^bool rrr = false;$/;"	v
+size	./extent_protocol.h	/^    unsigned int size;$/;"	m	struct:extent_protocol::attr
+size	./yfs_client.h	/^    unsigned long long size;$/;"	m	struct:yfs_client::fileinfo
+stat	./lock_client.cc	/^lock_client::stat(lock_protocol::lockid_t lid)$/;"	f	class:lock_client
+stat	./lock_protocol.h	/^    stat$/;"	e	enum:lock_protocol::rpc_numbers
+stat	./lock_server.cc	/^lock_server::stat(int clt, lock_protocol::lockid_t lid, int &r)$/;"	f	class:lock_server
+status	./extent_protocol.h	/^  typedef int status;$/;"	t	class:extent_protocol
+status	./lock_protocol.h	/^  typedef int status;$/;"	t	class:lock_protocol
+status	./yfs_client.h	/^  typedef int status;$/;"	t	class:yfs_client
+table_mutex_	./lock_server.h	/^  std::mutex table_mutex_;$/;"	m	class:lock_server
+test1	./lock_tester.cc	/^test1(void)$/;"	f
+test2	./lock_tester.cc	/^test2(void *x) $/;"	f
+test3	./lock_tester.cc	/^test3(void *x)$/;"	f
+test4	./lock_tester.cc	/^test4(void *x)$/;"	f
+test5	./lock_tester.cc	/^test5(void *x)$/;"	f
+xxstatus	./extent_protocol.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR };$/;"	g	class:extent_protocol
+xxstatus	./lock_protocol.h	/^  enum xxstatus { OK, RETRY, RPCERR, NOENT, IOERR };$/;"	g	class:lock_protocol
+xxstatus	./yfs_client.h	/^  enum xxstatus { OK, RPCERR, NOENT, IOERR, EXIST };$/;"	g	class:yfs_client
+yfs	./fuse.cc	/^yfs_client *yfs;$/;"	v
+yfs_client	./yfs_client.cc	/^yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)$/;"	f	class:yfs_client
+yfs_client	./yfs_client.h	/^class yfs_client {$/;"	c
+yfs_client_h	./yfs_client.h	2;"	d
+~lock_client	./lock_client.h	/^  virtual ~lock_client() {};$/;"	f	class:lock_client
+~lock_server	./lock_server.h	/^  ~lock_server() {};$/;"	f	class:lock_server
