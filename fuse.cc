@@ -546,6 +546,7 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
   // You fill this in for Lab 3
   if( yfs->isdir(parent) )
   {
+    yfs_client::status ret;
     std::string content;
     yfs->getdirdata(parent, content);
     //if(content.find())
@@ -557,12 +558,11 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     content.append(" ");
     content.append(yfs->filename(inum)); //(value, string&, base)
     content.append(" ");
-    //printf("  seserver_createhelper: data= zu lang%s", content.c_str());
+    printf("  fuseserver_mkdir: data= zu lang%s\n", content.c_str());
 
 
     yfs_client::inum ii = parent;
 
-    printf("parent %016llx \n", ii);
    // - Add a <name, ino> entry into @parent.
     yfs->put(ii,content);
    // - Create an empty extent for ino.
@@ -570,7 +570,11 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
 
     //set entry parameters
     e.ino = inum;
-    getattr(e.ino, e.attr);
+    struct stat st;
+    if(ret = getattr(inum, st) == yfs_client::OK) {
+        e.attr = st;
+        printf("fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
+        }
   }
 
 #if 1 

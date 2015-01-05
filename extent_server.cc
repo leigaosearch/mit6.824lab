@@ -22,7 +22,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   if (num == 0) {
   printf("create = %llu\n",id);
     extent_protocol::attr a;
-    a.ctime = t;
+    a.atime = t;
     a.mtime = t;
     a.ctime = t;
     a.size = buf.size();
@@ -35,7 +35,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   }
   else {
     extentattrs[id].mtime = t;
-    extentattrs[id].ctime = t;
+    extentattrs[id].atime = t;
     extentattrs[id].size = buf.size();
   }
 
