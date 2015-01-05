@@ -284,6 +284,7 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
   {
     std::string content;
     yfs->getdirdata(parent, content);
+    //if(content.find())
     std::cout << "parent: " << content << std::endl;
 
     yfs_client::inum inum = new_inum();
@@ -298,7 +299,9 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
     yfs_client::inum ii = parent;
 
     printf("parent %016llx \n", ii);
+   // - Add a <name, ino> entry into @parent.
     yfs->put(ii,content);
+   // - Create an empty extent for ino.
     yfs->put(inum,"");
 
     //set entry parameters
@@ -538,8 +541,39 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
   // Suppress compiler warning of unused e.
   (void) e;
 
+
+
   // You fill this in for Lab 3
-#if 0
+  if( yfs->isdir(parent) )
+  {
+    std::string content;
+    yfs->getdirdata(parent, content);
+    //if(content.find())
+    std::cout << "parent: " << content << std::endl;
+
+    yfs_client::inum inum = new_inum(false);
+
+    content.append(name);
+    content.append(" ");
+    content.append(yfs->filename(inum)); //(value, string&, base)
+    content.append(" ");
+    //printf("  seserver_createhelper: data= zu lang%s", content.c_str());
+
+
+    yfs_client::inum ii = parent;
+
+    printf("parent %016llx \n", ii);
+   // - Add a <name, ino> entry into @parent.
+    yfs->put(ii,content);
+   // - Create an empty extent for ino.
+    yfs->put(inum,"");
+
+    //set entry parameters
+    e.ino = inum;
+    getattr(e.ino, e.attr);
+  }
+
+#if 1 
   fuse_reply_entry(req, &e);
 #else
   fuse_reply_err(req, ENOSYS);
@@ -560,7 +594,28 @@ fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
   // You fill this in for Lab 3
   // Success:	fuse_reply_err(req, 0);
   // Not found:	fuse_reply_err(req, ENOENT);
-  fuse_reply_err(req, ENOSYS);
+  
+  //find name in parent contents
+  
+  //
+  std::string content;
+  yfs->getdirdata(parent, content);
+  auto  found = content.find(name);
+  if (found != string::npos) {
+    auto firstspace = content.find(" ",found+1);
+    auto secondspace = content.find(" ",firstspace);
+    printf("%d %d %d \n", found, firstspace, secondspace);
+    auto strnum = content.substr(firstspace+1, secondspace-1);
+    auto num = yfs->n2i(strnum);
+    yfs->remove(num);
+    std::string a(name);
+    string toremove =  " "+a+ " "+strnum;
+    fuse_reply_err(req, 0);
+  }
+  else {
+    fuse_reply_err(req, ENOSYS);
+  }
+
 }
 
 void

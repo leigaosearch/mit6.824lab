@@ -266,3 +266,7 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   release:
     return r;
 }
+yfs_client::status
+yfs_client::remove(inum inum) {
+  ec->remove(inum);
+}

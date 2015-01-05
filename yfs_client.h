@@ -34,8 +34,8 @@ class yfs_client {
   };
 
  private:
-  static inum n2i(std::string);
  public:
+  static inum n2i(std::string);
 
   static std::string filename(inum);
   yfs_client(std::string, std::string);
@@ -48,6 +48,7 @@ class yfs_client {
   int setattr(inum inum, fileinfo &fin);
   status read(inum inum, std::string &buf, off_t offset, size_t nbytes);
   status write(inum inum, std::string buf,  off_t offset, size_t nbytes);
+  status remove(inum inum);
   int lookup(inum p_inum, const char *name, inum &c_inum);
 };
 
