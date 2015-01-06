@@ -62,7 +62,6 @@ getattr(yfs_client::inum inum, struct stat &st)
   bzero(&st, sizeof(st));
 
   st.st_ino = inum;
-  printf("getattr %016llx %d\n", inum, yfs->isfile(inum));
   if(yfs->isfile(inum)){
      yfs_client::fileinfo info;
      ret = yfs->getfile(inum, info);
@@ -74,7 +73,7 @@ getattr(yfs_client::inum inum, struct stat &st)
      st.st_mtime = info.mtime;
      st.st_ctime = info.ctime;
      st.st_size = info.size;
-     printf("   getattr -> %llu\n", info.size);
+     printf("   fileattr -> %llu\n", info.size);
    } else {
      yfs_client::dirinfo info;
      ret = yfs->getdir(inum, info);
@@ -85,7 +84,7 @@ getattr(yfs_client::inum inum, struct stat &st)
      st.st_atime = info.atime;
      st.st_mtime = info.mtime;
      st.st_ctime = info.ctime;
-     printf("   getattr -> %lu %lu %lu\n", info.atime, info.mtime, info.ctime);
+     printf("   dirattr -> %lu %lu %lu\n", info.atime, info.mtime, info.ctime);
    }
    return yfs_client::OK;
 }
@@ -558,7 +557,7 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     content.append(" ");
     content.append(yfs->filename(inum)); //(value, string&, base)
     content.append(" ");
-    printf("  fuseserver_mkdir: data= zu lang%s\n", content.c_str());
+    printf("  fuseserver_mkdir: name and id %s\n", content.c_str());
 
 
     yfs_client::inum ii = parent;
@@ -606,14 +605,19 @@ fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
   yfs->getdirdata(parent, content);
   auto  found = content.find(name);
   if (found != string::npos) {
-    auto firstspace = content.find(" ",found+1);
-    auto secondspace = content.find(" ",firstspace);
+    auto firstspace = content.find(' ',found);
+    auto secondspace = content.find(' ',firstspace+1);
     printf("%d %d %d \n", found, firstspace, secondspace);
-    auto strnum = content.substr(firstspace+1, secondspace-1);
+    auto strnum = content.substr(firstspace+1, secondspace-firstspace-1);
     auto num = yfs->n2i(strnum);
     yfs->remove(num);
     std::string a(name);
     string toremove =  " "+a+ " "+strnum;
+    printf("Previous content %s\n",content.c_str());
+    string newcontent = content.substr(0,found-1)+" "+content.substr(secondspace+1);
+    printf("New content %s\n",newcontent.c_str());
+    yfs->put(parent, newcontent);
+
     fuse_reply_err(req, 0);
   }
   else {

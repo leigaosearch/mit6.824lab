@@ -408,7 +408,7 @@ method_thread_parent	rpc/method_thread.h	/^method_thread_parent(void *(*fn)(void
 mgr	rpc/connection.h	/^	chanmgr *mgr;$/;"	m	struct:bundle
 mgr_	rpc/connection.h	/^		chanmgr *mgr_;$/;"	m	class:connection
 mgr_	rpc/connection.h	/^		chanmgr *mgr_;$/;"	m	class:tcpsconn
-min	fuse.cc	452;"	d	file:
+min	fuse.cc	455;"	d	file:
 mtime	extent_protocol.h	/^    unsigned int mtime;$/;"	m	struct:extent_protocol::attr
 mtime	yfs_client.h	/^    unsigned long mtime;$/;"	m	struct:yfs_client::dirinfo
 mtime	yfs_client.h	/^    unsigned long mtime;$/;"	m	struct:yfs_client::fileinfo
@@ -499,6 +499,7 @@ release	lock_server.cc	/^lock_server::release(int clt,lock_protocol::lockid_t li
 remove	extent_client.cc	/^extent_client::remove(extent_protocol::extentid_t eid)$/;"	f	class:extent_client
 remove	extent_protocol.h	/^    remove$/;"	e	enum:extent_protocol::rpc_numbers
 remove	extent_server.cc	/^int extent_server::remove(extent_protocol::extentid_t id, int &)$/;"	f	class:extent_server
+remove	yfs_client.cc	/^yfs_client::remove(inum inum) {$/;"	f	class:yfs_client
 reply_buf_limited	fuse.cc	/^int reply_buf_limited(fuse_req_t req, const char *buf, size_t bufsize,$/;"	f
 reply_header	rpc/marshall.h	/^	reply_header(int x=0, int r=0): xid(x), ret(r) {}$/;"	f	struct:reply_header
 reply_header	rpc/marshall.h	/^struct reply_header {$/;"	s
