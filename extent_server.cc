@@ -18,9 +18,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   //std::lock_guard<std::
   int num = extentattrs.count(id);
   auto t = time(NULL);
-  printf("put id = %llu\n",id);
   if (num == 0) {
-  printf("create = %llu\n",id);
     extent_protocol::attr a;
     a.atime = t;
     a.mtime = t;

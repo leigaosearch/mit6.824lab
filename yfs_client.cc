@@ -14,6 +14,7 @@
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 {
   ec = new extent_client(extent_dst);
+  lc = new lock_client(lock_dst);
 
 }
 
@@ -57,6 +58,7 @@ yfs_client::getfile(inum inum, fileinfo &fin)
 
   printf("getfile %016llx\n", inum);
   extent_protocol::attr a;
+  lc->acquire(inum);
   if (ec->getattr(inum, a) != extent_protocol::OK) {
     printf("IO ERROR\n");
     r = IOERR;
@@ -70,14 +72,16 @@ yfs_client::getfile(inum inum, fileinfo &fin)
   printf("getfile %016llx -> sz %llu\n", inum, fin.size);
 
 release:
-
+  lc->release(inum);
   return r;
 }
 int 
 yfs_client::setattr(inum inum, fileinfo &fin) {
   int r = OK;
   std::string file_buf;
+  lc->acquire(inum);
   if (ec->get(inum, file_buf) != extent_protocol::OK) {
+    lc->release(inum);
     r = IOERR;
     return r;
   }
@@ -88,9 +92,11 @@ yfs_client::setattr(inum inum, fileinfo &fin) {
   }
   if (ec->put(inum,file_buf) != extent_protocol::OK) {
     r = IOERR;
+    lc->release(inum);
     return r;
   }
   r = OK;
+  lc->release(inum);
   return r;
 
 }
@@ -103,6 +109,7 @@ yfs_client::getdir(inum inum, dirinfo &din)
   // - hold and release the directory lock
 
   extent_protocol::attr a;
+  lc->acquire(inum);
   if (ec->getattr(inum, a) != extent_protocol::OK) {
     r = IOERR;
     printf("getdir error and got rlease \n");
@@ -113,7 +120,8 @@ yfs_client::getdir(inum inum, dirinfo &din)
   din.ctime = a.ctime;
 
 release:
-    printf("getdir return OK \n");
+  lc->release(inum);
+  printf("getdir return OK \n");
   return r;
 }
 
@@ -123,18 +131,21 @@ int yfs_client::getdirdata(inum inum, std::string & content){
   int r = yfs_client::OK;
   printf("getdirdata %016llx\n", inum);
 
+  lc->acquire(inum);
   if (ec->get(inum, content) != extent_protocol::OK) {
     r = IOERR;
     goto release;
   }
   printf("getdirdata %016llx -> sz %d\n", inum, content.size() );
 release:
+  lc->release(inum);
   return r;
 }
 
 int yfs_client::put(inum inum, std::string content){
   int r = OK;
   printf("put %016llx\n", inum);
+  lc->acquire(inum);
   if (ec->put(inum, content) != extent_protocol::OK) {
 
     printf("put error\n", inum);
@@ -144,6 +155,7 @@ int yfs_client::put(inum inum, std::string content){
   printf("put %016llx -> sz %d\n", inum, content.size() );
 
 release:
+  lc->release(inum);
   return r;  
 }
 
@@ -166,14 +178,17 @@ yfs_client::read(inum inum, std::string &buf, off_t offset, size_t nbytes)
     size = fin.size -offset;
   }
   std::string buf1;
+  lc->acquire(inum);
   if (ec->get(inum, buf1) == extent_protocol::OK) {
     buf = buf1.substr(offset,size);
     std::cout << "Read buf:" << buf.size() << " size:" << size << " off" <<offset<<std::endl;;
     r = OK;
+    lc->release(inum);
     return r;
   }
   else 
     std::cout << "Read buf failed"<<std::endl;
+  lc->release(inum);
   return IOERR;
 
 }
@@ -194,11 +209,14 @@ yfs_client::write(inum inum, std::string buf, off_t off, size_t nbytes)
     std::cout << "write return IOERR\n";
     return r;
   }
+  lc->acquire(inum);
   if (ec->get(inum, file_buf) != extent_protocol::OK) {
     std::cout <<"get content \n"<<std::endl;
     r = IOERR;
+  lc->release(inum);
     return r;
   }
+  lc->release(inum);
   std::cout << "write file size" << fin.size << "\n";
   std::cout << "write file buf size" << file_buf.size() << "\n";
   if (off > fin.size) {
@@ -218,11 +236,14 @@ yfs_client::write(inum inum, std::string buf, off_t off, size_t nbytes)
   }
 
 
+  lc->acquire(inum);
   if (ec->put(inum, file_buf) != extent_protocol::OK) {
     std::cout <<" write and put error \n"<<std::endl;
     r = IOERR;
+    lc->release(inum);
     return r;
   }
+  lc->release(inum);
 
   r = OK;
 
@@ -234,6 +255,7 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   char *cstr, *p;
   inum curr_inum;
 // Read Parent Dir and check if name already exists
+  lc->acquire(p_inum);
   if (ec->get(p_inum, p_buf) != extent_protocol::OK) {
       printf("p_inum name alread exist %016llx\n", p_inum);
      r = NOENT;
@@ -263,9 +285,12 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   delete[] cstr;
   r = NOENT; 
   release:
+    lc->release(p_inum);
     return r;
 }
 yfs_client::status
 yfs_client::remove(inum inum) {
+  lc->acquire(inum);
   ec->remove(inum);
+  lc->release(inum);
 }

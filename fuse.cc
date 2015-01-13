@@ -614,7 +614,7 @@ fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
     std::string a(name);
     string toremove =  " "+a+ " "+strnum;
     printf("Previous content %s\n",content.c_str());
-    string newcontent = content.substr(0,found-1)+" "+content.substr(secondspace+1);
+    string newcontent = content.substr(0,found)+content.substr(secondspace+1);
     printf("New content %s\n",newcontent.c_str());
     yfs->put(parent, newcontent);
 
