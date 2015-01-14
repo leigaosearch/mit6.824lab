@@ -51,6 +51,7 @@ class yfs_client {
   status write(inum inum, std::string buf,  off_t offset, size_t nbytes);
   status remove(inum inum);
   int lookup(inum p_inum, const char *name, inum &c_inum);
+  yfs_client::status create(inum parent, const char * name,   inum &fnum);
 };
 
 #endif 

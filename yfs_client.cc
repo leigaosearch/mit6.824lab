@@ -10,6 +10,21 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+yfs_client::inum new_inum(bool file = true){
+  bool rrr = false;
+  if(!rrr){
+    srand(time(NULL));
+    rrr= true;
+  }
+  unsigned int i = rand();
+  if (file){
+    i = i | 0x80000000;    
+  } else {
+    i = i & 0x7FFFFFFF;
+  }
+//   printf("inum danach: %i",i);
+  return i;
+}
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 {
@@ -289,8 +304,40 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
     return r;
 }
 yfs_client::status
-yfs_client::remove(inum inum) {
-  lc->acquire(inum);
-  ec->remove(inum);
-  lc->release(inum);
+yfs_client::remove(inum num) {
+  lc->acquire(num);
+  ec->remove(num);
+  lc->release(num);
+}
+
+yfs_client::status
+yfs_client::create(yfs_client::inum parent, const char * name,   inum &fnum) {
+     int r = NOENT;
+  if( isdir(parent) ) {
+    yfs_client::status ret;
+    std::string content;
+    getdirdata(parent, content);
+    //if(content.find())
+    std::cout << "parent: " << content << std::endl;
+
+    yfs_client::inum filenum = new_inum(false);
+
+    content.append(name);
+    content.append(" ");
+    content.append(filename(filenum)); //(value, string&, base)
+    content.append(" ");
+    printf("  fuseserver_mkdir: name and id %s\n", content.c_str());
+
+    yfs_client::inum ii = parent;
+   // - Add a <name, ino> entry into @parent.
+    put(ii,content);
+   // - Create an empty extent for ino.
+    put(filenum,std::string(""));
+
+    //set entry parameters
+    fnum = filenum;
+    r = OK;
+  }
+  return r;
+
 }

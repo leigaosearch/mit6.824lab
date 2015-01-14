@@ -39,11 +39,11 @@ int id() {
 // less correct values for the access/modify/change times
 // (atime, mtime, and ctime), and correct values for file sizes.
 //
-bool rrr = false;
-yfs_client::inum new_inum(bool file = true){
-  if(!rrr){
+bool rrr1 = false;
+yfs_client::inum new_inum1(bool file = true){
+  if(!rrr1){
     srand(time(NULL));
-    rrr= true;
+    rrr1= true;
   }
   unsigned int i = rand();
   if (file){
@@ -279,48 +279,26 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
                         mode_t mode, struct fuse_entry_param *e)
 {
   printf("fuseserver_createhelper name: %s\n",name);
-  if( yfs->isdir(parent) )
-  {
-    std::string content;
-    yfs->getdirdata(parent, content);
-    //if(content.find())
-    std::cout << "parent: " << content << std::endl;
-
-    yfs_client::inum inum = new_inum();
-
-    content.append(name);
-    content.append(" ");
-    content.append(yfs->filename(inum)); //(value, string&, base)
-    content.append(" ");
-    //printf("  seserver_createhelper: data= zu lang%s", content.c_str());
-
-
-    yfs_client::inum ii = parent;
-
-    printf("parent %016llx \n", ii);
-   // - Add a <name, ino> entry into @parent.
-    yfs->put(ii,content);
-   // - Create an empty extent for ino.
-    yfs->put(inum,"");
-
+  yfs_client::inum fnum =0;
+  yfs_client::inum iparent = parent;
+  yfs->create(iparent,name,fnum);
     //set entry parameters
     e->attr_timeout = 0.0;
     e->entry_timeout = 0.0;
-    e->ino = inum;
+    e->ino = fnum;
     getattr(e->ino, e->attr);
 
     //test insertion TODO remove
     //get data
     std::string data;
-    yfs->getdirdata(inum, data);
-    printf("   reatetestdata = %s\n",data.c_str());
+    yfs->getdirdata(iparent, data);
+    printf("read tetestdata = %s\n",data.c_str());
     return yfs_client::OK;
-  }
 
   //printf("  seserver_createhelper !! parent is NOT A DIR\n");
 
   // You fill this in
-  return yfs_client::NOENT;
+  // return yfs_client::NOENT;
 }
 
 
@@ -551,7 +529,7 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
     //if(content.find())
     std::cout << "parent: " << content << std::endl;
 
-    yfs_client::inum inum = new_inum(false);
+    yfs_client::inum inum = new_inum1(false);
 
     content.append(name);
     content.append(" ");
