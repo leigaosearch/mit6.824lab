@@ -10,8 +10,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+bool rrr = false;
 yfs_client::inum new_inum(bool file = true){
-  bool rrr = false;
   if(!rrr){
     srand(time(NULL));
     rrr= true;
@@ -30,7 +30,9 @@ yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 {
   ec = new extent_client(extent_dst);
   lc = new lock_client(lock_dst);
-
+  const inum root = 0x00000001;
+  std::string buf(filename(root)+' '+"root"+' ');
+  ec->put(root, buf);
 }
 
   yfs_client::inum
@@ -178,22 +180,30 @@ release:
 yfs_client::read(inum inum, std::string &buf, off_t offset, size_t nbytes)
 {
   int r = OK;
+  lc->acquire(inum);
   fileinfo fin;
-  if (getfile(inum,fin) != OK) {
+  extent_protocol::attr a;
+  if (ec->getattr(inum, a) != extent_protocol::OK) {
     r = IOERR;
+    lc->release(inum);
     return r;
   }
+  fin.atime = a.atime;
+  fin.mtime = a.mtime;
+  fin.ctime = a.ctime;
+  fin.size = a.size;
+  
   size_t size = fin.size;
   if(offset > fin.size) {
     buf = '\0';
     r = OK;
+    lc->release(inum);
     return r;
   }
   if ((offset + nbytes) > fin.size) {
     size = fin.size -offset;
   }
   std::string buf1;
-  lc->acquire(inum);
   if (ec->get(inum, buf1) == extent_protocol::OK) {
     buf = buf1.substr(offset,size);
     std::cout << "Read buf:" << buf.size() << " size:" << size << " off" <<offset<<std::endl;;
@@ -218,21 +228,32 @@ yfs_client::write(inum inum, std::string buf, off_t off, size_t nbytes)
   to_write.resize((int)nbytes);
   std::cout << "To write buf:" << buf.size() << " size:" << nbytes << " off" <<off<<std::endl;;
   int r = OK;
+#if 0
   fileinfo fin;
   if (getfile(inum, fin) != OK) {
     r = IOERR;
     std::cout << "write return IOERR\n";
     return r;
   }
+#endif
   lc->acquire(inum);
+  fileinfo fin;
+  extent_protocol::attr a;
+  if (ec->getattr(inum, a) != extent_protocol::OK) {
+    r = IOERR;
+    lc->release(inum);
+    return r;
+  }
+  fin.atime = a.atime;
+  fin.mtime = a.mtime;
+  fin.ctime = a.ctime;
+  fin.size = a.size;
   if (ec->get(inum, file_buf) != extent_protocol::OK) {
     std::cout <<"get content \n"<<std::endl;
     r = IOERR;
-  lc->release(inum);
+    lc->release(inum);
     return r;
   }
-  lc->release(inum);
-  std::cout << "write file size" << fin.size << "\n";
   std::cout << "write file buf size" << file_buf.size() << "\n";
   if (off > fin.size) {
     std::cout << "off = "<< off <<"\tfile size = "<<fin.size<<"\n";
@@ -251,7 +272,6 @@ yfs_client::write(inum inum, std::string buf, off_t off, size_t nbytes)
   }
 
 
-  lc->acquire(inum);
   if (ec->put(inum, file_buf) != extent_protocol::OK) {
     std::cout <<" write and put error \n"<<std::endl;
     r = IOERR;
@@ -311,17 +331,32 @@ yfs_client::remove(inum num) {
 }
 
 yfs_client::status
-yfs_client::create(yfs_client::inum parent, const char * name,   inum &fnum) {
+yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool isfile) {
      int r = NOENT;
   if( isdir(parent) ) {
-    yfs_client::status ret;
     std::string content;
-    getdirdata(parent, content);
-    //if(content.find())
-    std::cout << "parent: " << content << std::endl;
+    lc->acquire(parent);
+    //get parent infor
+    if (ec->get(parent, content) != extent_protocol::OK) {
+      std::cout << "get parent info: *******error" << std::endl;
+      lc->release(parent);
+      r = IOERR;
+      return r;
+    }
+    std::string sname(name);
+    std::cout << "parent: " << content <<"name: " << sname << std::endl;
+    sname = sname + " ";
+    int npos;
+    if((npos = content.find(sname)) != std::string::npos) {
+      if((npos == 0) || (content[npos-1] == ' ') ) {
+      std::cout << "exist..............." <<std::endl;
+      r =  EXIST;
+      lc->release(parent);
+      return r;
+      }
+    }
 
-    yfs_client::inum filenum = new_inum(false);
-
+    yfs_client::inum filenum = new_inum(isfile);
     content.append(name);
     content.append(" ");
     content.append(filename(filenum)); //(value, string&, base)
@@ -330,14 +365,52 @@ yfs_client::create(yfs_client::inum parent, const char * name,   inum &fnum) {
 
     yfs_client::inum ii = parent;
    // - Add a <name, ino> entry into @parent.
-    put(ii,content);
+    ec->put(ii,content);
    // - Create an empty extent for ino.
-    put(filenum,std::string(""));
+    ec->put(filenum,std::string(""));
+    lc->release(parent);
 
     //set entry parameters
     fnum = filenum;
     r = OK;
   }
+  return r;
+}
+
+
+yfs_client::status
+yfs_client::unlink(yfs_client::inum parent, const char *name)
+{
+
+  int r = OK;
+  std::string content;
+  lc->acquire(parent);
+  if (ec->get(parent, content) != extent_protocol::OK) {
+    r = IOERR;
+    lc->release(parent);
+    return r;
+  }
+  auto  found = content.find(name);
+  if (found != std::string::npos) {
+    auto firstspace = content.find(' ',found);
+    auto secondspace = content.find(' ',firstspace+1);
+    printf("%d %d %d \n", found, firstspace, secondspace);
+    auto strnum = content.substr(firstspace+1, secondspace-firstspace-1);
+    auto num = n2i(strnum);
+    ec->remove(num);
+    std::string a(name);
+    std::string toremove =  " "+a+ " "+strnum;
+    printf("Previous content %s\n",content.c_str());
+    std::string newcontent = content.substr(0,found)+content.substr(secondspace+1);
+    printf("New content %s\n",newcontent.c_str());
+    if (ec->put(parent, newcontent) != extent_protocol::OK) {
+      r = IOERR;
+      lc->release(parent);
+      return r;
+    }
+
+  }
+  lc->release(parent);
   return r;
 
 }

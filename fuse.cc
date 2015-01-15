@@ -39,27 +39,13 @@ int id() {
 // less correct values for the access/modify/change times
 // (atime, mtime, and ctime), and correct values for file sizes.
 //
-bool rrr1 = false;
-yfs_client::inum new_inum1(bool file = true){
-  if(!rrr1){
-    srand(time(NULL));
-    rrr1= true;
-  }
-  unsigned int i = rand();
-  if (file){
-    i = i | 0x80000000;    
-  } else {
-    i = i & 0x7FFFFFFF;
-  }
-//   printf("inum danach: %i",i);
-  return i;
-}
 yfs_client::status
 getattr(yfs_client::inum inum, struct stat &st)
 {
   yfs_client::status ret;
 
   bzero(&st, sizeof(st));
+  printf("   getfileattr -> \n");
 
   st.st_ino = inum;
   if(yfs->isfile(inum)){
@@ -281,8 +267,10 @@ fuseserver_createhelper(fuse_ino_t parent, const char *name,
   printf("fuseserver_createhelper name: %s\n",name);
   yfs_client::inum fnum =0;
   yfs_client::inum iparent = parent;
-  yfs->create(iparent,name,fnum);
+  int r = yfs->create(iparent,name,fnum,true);
     //set entry parameters
+    if(r == yfs_client::EXIST)
+      return r;
     e->attr_timeout = 0.0;
     e->entry_timeout = 0.0;
     e->ino = fnum;
@@ -469,6 +457,7 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
    // get directory contents
   std::string retrieve;
   yfs->getdirdata(ino, retrieve);
+  printf("dir %s\n ", retrieve.c_str());
   
   // add file names to directory one by one
   while(retrieve.length() > 0){
@@ -519,36 +508,19 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
   (void) e;
 
 
-
   // You fill this in for Lab 3
   if( yfs->isdir(parent) )
   {
     yfs_client::status ret;
-    std::string content;
-    yfs->getdirdata(parent, content);
-    //if(content.find())
-    std::cout << "parent: " << content << std::endl;
-
-    yfs_client::inum inum = new_inum1(false);
-
-    content.append(name);
-    content.append(" ");
-    content.append(yfs->filename(inum)); //(value, string&, base)
-    content.append(" ");
-    printf("  fuseserver_mkdir: name and id %s\n", content.c_str());
-
-
     yfs_client::inum ii = parent;
-
-   // - Add a <name, ino> entry into @parent.
-    yfs->put(ii,content);
-   // - Create an empty extent for ino.
-    yfs->put(inum,"");
-
-    //set entry parameters
-    e.ino = inum;
     struct stat st;
-    if(ret = getattr(inum, st) == yfs_client::OK) {
+    getattr(ii,st);
+    yfs_client::inum fnum = 0;
+    printf("mkdir name %s\n",name);
+    yfs->create(ii, name, fnum, false);
+    //set entry parameters
+    e.ino = fnum;
+    if(ret = getattr(fnum, st) == yfs_client::OK) {
         e.attr = st;
         printf("fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
         }
@@ -579,23 +551,7 @@ fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
   //find name in parent contents
   
   //
-  std::string content;
-  yfs->getdirdata(parent, content);
-  auto  found = content.find(name);
-  if (found != string::npos) {
-    auto firstspace = content.find(' ',found);
-    auto secondspace = content.find(' ',firstspace+1);
-    printf("%d %d %d \n", found, firstspace, secondspace);
-    auto strnum = content.substr(firstspace+1, secondspace-firstspace-1);
-    auto num = yfs->n2i(strnum);
-    yfs->remove(num);
-    std::string a(name);
-    string toremove =  " "+a+ " "+strnum;
-    printf("Previous content %s\n",content.c_str());
-    string newcontent = content.substr(0,found)+content.substr(secondspace+1);
-    printf("New content %s\n",newcontent.c_str());
-    yfs->put(parent, newcontent);
-
+  if (yfs->unlink(parent,name) == yfs_client::OK) {
     fuse_reply_err(req, 0);
   }
   else {
