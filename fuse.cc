@@ -225,7 +225,9 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
   yfs_client::status ret;
   if (yfs->isfile(inum)) {
     std::cout <<"off: " << off << "size: " << size<<'\n';
-    if(((ret = yfs->write(inum,buf,off,size))) != yfs_client::OK) {
+    std::string sbuf(buf,size);
+
+    if(((ret = yfs->write(inum,sbuf,off,size))) != yfs_client::OK) {
     std::cout << "error write\n";
     fuse_reply_err(req, ENOSYS);
     }
