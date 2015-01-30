@@ -300,7 +300,7 @@ fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,
   struct fuse_entry_param e;
   yfs_client::status ret;
   if( (ret = fuseserver_createhelper( parent, name, mode, &e )) == yfs_client::OK ) {
-    std::cout<<parent<<name<<mode<<endl;;
+    std::cout<<"create "<<parent<<"/"<<name<<"/"<<mode<<endl;;
     fuse_reply_create(req, &e, fi);
   } else {
 		if (ret == yfs_client::EXIST) {
@@ -344,7 +344,6 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   e.entry_timeout = 0.0;
   e.generation = 0;
   bool found = false;
-  /*
   yfs_client::status ret;
   yfs_client::inum p_inum = parent;
   yfs_client::inum c_inum;
@@ -363,7 +362,7 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
     fuse_reply_entry(req, &e);
   else
     fuse_reply_err(req, ENOENT);
-  */
+    /*
     printf("name: %s\n", name);
 
   // retreive what is in directory
@@ -373,8 +372,8 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   // look for file name
   int search = buffer.find(name);
   printf("name is at index: %d\n", search);
-  
-  
+  ret = yfs->lookup(p_inum, name, c_inum);
+
   if(search != -1){
     found = true;
   }
@@ -382,8 +381,8 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   // parse directory contents for inum to update e
   if (found){
     buffer = buffer.substr(search, buffer.length());
-    buffer = buffer.substr(buffer.find(" ") + 1, buffer.length());
-    buffer = buffer.substr(0, buffer.find(" "));
+    buffer = buffer.substr(buffer.find("/") + 1, buffer.length());
+    buffer = buffer.substr(0, buffer.find("/"));
     
     // convert inum string to a long long unsigned
     std::istringstream ist(buffer);
@@ -399,7 +398,7 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   }
   else {
     fuse_reply_err(req, ENOENT);
-  }
+  }*/
 }
 
 
@@ -462,14 +461,33 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
   printf("dir %s\n ", retrieve.c_str());
   
   // add file names to directory one by one
-  while(retrieve.length() > 0){
-    std::string file = retrieve.substr(0, retrieve.find(" "));
+  while(retrieve.length() > 0) {
+
+    //"/root/1"
+    auto firstfound = retrieve.find("/");
+    if(firstfound == std::string::npos) {
+      break;
+    }
+    auto secondfound = retrieve.find(firstfound+1,'/');
+    if(secondfound == std::string::npos) {
+      break;
+    }
+    secondfound = retrieve.find(firstfound+1,'/');
+    std::string file = retrieve.substr(firstfound+1,secondfound-firstfound-1);
     printf("file added %s\n ", file.c_str());
     dirbuf_add(&b, file.c_str(), ino);
-    index = retrieve.find(" ");
+    retrieve = retrieve.substr(secondfound+1);
+
+
+#if 0
+    std::string file = retrieve.substr(1, retrieve.find("/")-1);
+    printf("file added %s\n ", file.c_str());
+    dirbuf_add(&b, file.c_str(), ino);
+    index = retrieve.find("/");
     retrieve = retrieve.substr(index + 1, retrieve.length());
-    index = retrieve.find(" ");
+    index = retrieve.find("/");
     retrieve = retrieve.substr(index + 1, retrieve.length());
+#endif
   }
 
   // You fill this in for Lab 2
@@ -526,6 +544,9 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
         e.attr = st;
         printf("fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
         }
+    else {
+        printf("wrong fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
+    }
   }
 
 #if 1 

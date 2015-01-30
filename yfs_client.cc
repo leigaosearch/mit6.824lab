@@ -10,8 +10,40 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
+
+int limited_rand(int limit)
+{
+  int r, d = RAND_MAX / limit;
+  limit *= d;
+  do { r = rand(); } while (r >= limit);
+  return r / d;
+}
+
+yfs_client::inum yfs_client::new_inum(bool isfile)
+{
+  yfs_client::inum finum;
+  int rand_num = limited_rand(0x7FFFFFFF);
+  if (isfile) 
+    finum = rand_num | 0x0000000080000000;
+  else 
+    finum = rand_num & 0x000000007FFFFFFF;
+  printf("new_inum %016llx \n",finum);
+  return finum;
+}
+
+#if 0
+yfs_client::inum yfs_client::new_inum(bool isdir){
+    int r = rand() * rand();
+    if(isdir == false){
+        r |=  0x80000000;
+    }
+    else
+        r &= 0x7FFFFFFF;
+    return r;
+}
 bool rrr = false;
-yfs_client::inum new_inum(bool file = true){
+yfs_client::inum yfs_client::new_inum(bool file){
   if(!rrr){
     srand(time(NULL));
     rrr= true;
@@ -25,13 +57,14 @@ yfs_client::inum new_inum(bool file = true){
   //   printf("inum danach: %i",i);
   return i;
 }
+#endif
 
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 {
   ec = new extent_client(extent_dst);
   lc = new lock_client(lock_dst);
   const inum root = 0x00000001;
-  std::string buf(filename(root)+' '+"root"+' ');
+  std::string buf("/root/" + filename(root));
   ec->put(root, buf);
 }
 
@@ -73,7 +106,7 @@ yfs_client::getfile(inum inum, fileinfo &fin)
   // You modify this function for Lab 3
   // - hold and release the file lock
 
-  printf("getfile %016llx\n", inum);
+  //printf("getfile %016llx\n", inum);
   extent_protocol::attr a;
   lc->acquire(inum);
   if (ec->getattr(inum, a) != extent_protocol::OK) {
@@ -283,14 +316,28 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   // Read Parent Dir and check if name already exists
   lc->acquire(p_inum);
   if (ec->get(p_inum, p_buf) != extent_protocol::OK) {
-    printf("p_inum name alread exist %016llx\n", p_inum);
+    printf("p_inum name no entry  %016llx\n", p_inum);
     r = NOENT;
     goto release;
   }
+
+
+  bool found = true;
+  auto firstfound = std::string::npos;
+  auto sencondfound = std::string::npos; 
+  do {
+    firstfound = p_buf.find(name);
+  } while(firstfound != std::string::npos && secondfound != std::string::npos);
+
+
+
+
+
+
   cstr = new char[p_buf.size()+1];
   strcpy(cstr, p_buf.c_str());
   printf("check its name\n");
-  p=strtok (cstr, " ");
+  p=strtok (cstr, "/");
   while (p!=NULL) {
     // Skip its own dir name & inum
     if(count!=1 && count%2 == 1) {
@@ -305,7 +352,7 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
       inum_buf = p;
       curr_inum = n2i(inum_buf);
     }
-    p=strtok(NULL," ");
+    p=strtok(NULL,"/");
     count++;
   }
   delete[] cstr;
@@ -336,29 +383,39 @@ yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool 
     }
     std::string sname(name);
     std::cout << "parent: " << content <<"name: " << sname << std::endl;
-    sname = sname + " ";
+    sname = "/"+sname+"/";
     int npos;
     if((npos = content.find(sname)) != std::string::npos) {
-      if((npos == 0) || (content[npos-1] == ' ') ) {
+        std::cout << "exist..............." <<std::endl;
+        r =  EXIST;
+        lc->release(parent);
+        return r;
+#if 0
+      if((npos == 0) || (content[npos-1] == '/') ) {
         std::cout << "exist..............." <<std::endl;
         r =  EXIST;
         lc->release(parent);
         return r;
       }
+#endif
     }
-
     yfs_client::inum filenum = new_inum(isfile);
+    printf("random number = %d\n",filenum);
+    content.append("/");
     content.append(name);
-    content.append(" ");
+    content.append("/");
     content.append(filename(filenum)); //(value, string&, base)
-    content.append(" ");
     printf("  fuseserver_mkdir: name and id %s\n", content.c_str());
-
     yfs_client::inum ii = parent;
     // - Add a <name, ino> entry into @parent.
     ec->put(ii,content);
     // - Create an empty extent for ino.
-    ec->put(filenum,std::string(""));
+    if(isfile) {
+        ec->put(filenum,std::string(""));
+    }
+    else {
+      ec->put(filenum,sname+filename(filenum)+"/");
+    }
     lc->release(parent);
 
     //set entry parameters
@@ -383,16 +440,20 @@ yfs_client::unlink(yfs_client::inum parent, const char *name)
   }
   auto  found = content.find(name);
   if (found != std::string::npos) {
-    auto firstspace = content.find(' ',found);
-    auto secondspace = content.find(' ',firstspace+1);
-    printf("%d %d %d \n", found, firstspace, secondspace);
-    auto strnum = content.substr(firstspace+1, secondspace-firstspace-1);
+    std::string strnum;
+    std::string newcontent;
+    auto firstspace = content.find('/',found);
+    auto secondspace = content.find('/',firstspace+1);
+    if(secondspace == std::string::npos) { 
+      strnum = content.substr(firstspace+1);
+    }
+    else 
+      strnum = content.substr(firstspace+1, secondspace-firstspace-1);
     auto num = n2i(strnum);
     ec->remove(num);
     std::string a(name);
-    std::string toremove =  " "+a+ " "+strnum;
     printf("Previous content %s\n",content.c_str());
-    std::string newcontent = content.substr(0,found)+content.substr(secondspace+1);
+    newcontent = content.substr(0,found)+content.substr(secondspace);
     printf("New content %s\n",newcontent.c_str());
     if (ec->put(parent, newcontent) != extent_protocol::OK) {
       r = IOERR;

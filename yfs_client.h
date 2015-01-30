@@ -53,6 +53,7 @@ class yfs_client {
   int lookup(inum p_inum, const char *name, inum &c_inum);
   yfs_client::status create(inum parent, const char * name,  inum &fnum, bool isfile = true);
   yfs_client::status unlink(yfs_client::inum parent, const char *name);
+  yfs_client::inum new_inum(bool file = true);
 };
 
 #endif 
