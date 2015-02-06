@@ -459,20 +459,28 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
   std::string retrieve;
   yfs->getdirdata(ino, retrieve);
   printf("dir %s\n ", retrieve.c_str());
+  auto firstfound = retrieve.find("/");
+  printf("firstfound =%d\n",firstfound);
+  if(firstfound == std::string::npos) {
+    return;
+    }
+  auto secondfound = retrieve.find('/', firstfound+1);
+  retrieve = retrieve.substr(secondfound+1);
   
   // add file names to directory one by one
   while(retrieve.length() > 0) {
 
     //"/root/1"
-    auto firstfound = retrieve.find("/");
+    firstfound = retrieve.find("/");
+    printf("firstfound =%d\n",firstfound);
     if(firstfound == std::string::npos) {
       break;
     }
-    auto secondfound = retrieve.find(firstfound+1,'/');
+    secondfound = retrieve.find('/', firstfound+1);
+    printf("secondfound =%d\n",secondfound);
     if(secondfound == std::string::npos) {
       break;
     }
-    secondfound = retrieve.find(firstfound+1,'/');
     std::string file = retrieve.substr(firstfound+1,secondfound-firstfound-1);
     printf("file added %s\n ", file.c_str());
     dirbuf_add(&b, file.c_str(), ino);

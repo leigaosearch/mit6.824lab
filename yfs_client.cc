@@ -320,20 +320,35 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
     r = NOENT;
     goto release;
   }
+  {
 
 
-  bool found = true;
-  auto firstfound = std::string::npos;
-  auto sencondfound = std::string::npos; 
-  do {
-    firstfound = p_buf.find(name);
-  } while(firstfound != std::string::npos && secondfound != std::string::npos);
+  bool found = false;
+  std::string::size_type firstfound;
+  std::string::size_type secondfound; 
+  auto namefound = p_buf.find(name);
+  if (namefound == std::string::npos) {
+    r = NOENT;
+    goto release;
+  }
+  firstfound = p_buf.find('/',namefound);
+  secondfound = p_buf.find("/",firstfound+1);
+  if ((firstfound - namefound) == strlen(name)) {
+    found = true;
+    inum_buf = p_buf.substr(firstfound+1,secondfound-firstfound);
+    curr_inum = n2i(inum_buf);
+    c_inum = curr_inum;
+    r = OK;
+    goto release;
+    }
+  }
 
 
 
 
 
 
+#if 0
   cstr = new char[p_buf.size()+1];
   strcpy(cstr, p_buf.c_str());
   printf("check its name\n");
@@ -357,6 +372,7 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   }
   delete[] cstr;
   r = NOENT; 
+#endif
 release:
   lc->release(p_inum);
   return r;
@@ -410,12 +426,15 @@ yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool 
     // - Add a <name, ino> entry into @parent.
     ec->put(ii,content);
     // - Create an empty extent for ino.
+    lc->acquire(filenum);
     if(isfile) {
         ec->put(filenum,std::string(""));
     }
     else {
-      ec->put(filenum,sname+filename(filenum)+"/");
+      printf("  fuseserver_mkdir:  %s\n", sname.c_str());
+      ec->put(filenum,sname+filename(filenum));
     }
+    lc->release(filenum);
     lc->release(parent);
 
     //set entry parameters
@@ -453,7 +472,12 @@ yfs_client::unlink(yfs_client::inum parent, const char *name)
     ec->remove(num);
     std::string a(name);
     printf("Previous content %s\n",content.c_str());
-    newcontent = content.substr(0,found)+content.substr(secondspace);
+    printf("strnum = %s\n",strnum.c_str());
+    //remove "/"
+    newcontent = content.substr(0,found -1);
+    printf("New content %s\n",newcontent.c_str());
+    if(secondspace != std::string::npos) 
+      newcontent = newcontent + content.substr(secondspace);
     printf("New content %s\n",newcontent.c_str());
     if (ec->put(parent, newcontent) != extent_protocol::OK) {
       r = IOERR;
