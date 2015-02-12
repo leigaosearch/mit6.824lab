@@ -217,12 +217,14 @@ unlinkn(const char *d, const char *prefix, int nf)
 
   for(i = 0; i < nf; i++){
     sprintf(n, "%s/%s-%d", d, prefix, i);
+      printf("unlink %s ",n);
     if(unlink(n) != 0){
       fprintf(stderr, "test-lab-3-c: unlink(%s): %s\n",
               n, strerror(errno));
       exit(1);
     }
   }
+  printf("\n");
 }
 
 int
@@ -331,23 +333,27 @@ main(int argc, char *argv[])
   setbuf(stdout, 0);
 
   printf("Create/delete in separate directories: ");
-
   pid = fork();
   if(pid < 0){
     perror("test-lab-3-c: fork");
     exit(1);
   }
   if(pid == 0){
+    printf("childe process d2=");
+    printf("%s",d2);
+    printf(" \n");
     createn(d2, "xx", 100);
-    unlinkn(d2, "xx", 99);
+    //unlinkn(d2, "xx", 99);
     exit(0);
   }
+  printf("Father process\n");
   createn(d1, "yy", 100);
-  unlinkn(d1, "yy", 99);
+  //unlinkn(d1, "yy", 99);
+  printf("sleep**********\n");
   sleep(4);
   reap(pid);
-  dircheck(d1, 1);
-  dircheck(d2, 1);
+  dircheck(d1, 100);
+  dircheck(d2, 100);
 
   printf("tests completed OK\n");
 

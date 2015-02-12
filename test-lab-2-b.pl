@@ -35,6 +35,16 @@ my $f2 = "b$$";
 
 my $files = { };
 
+writeone($dir1, $f1, 600);
+print "Write beyond the end of an existing file: ";
+writeat($dir1, $f1, 65536);
+checkcontent($dir1, $f1);
+print "OK\n";
+print "Write into the middle of an existing file: ";
+writeat($dir1, $f1, 190);
+checkcontent($dir1, $f1);
+print "OK\n";
+
 print "Write and read one file: ";
 writeone($dir1, $f1, 600);
 checkcontent($dir1, $f1);
@@ -42,7 +52,9 @@ print "OK\n";
 
 print "Write and read a second file: ";
 writeone($dir1, $f2, 4111);
+print "**** first file: ";
 checkcontent($dir1, $f2);
+print "**** second file: ";
 checkcontent($dir1, $f1);
 print "OK\n";
 
@@ -58,15 +70,7 @@ append($dir1, $f1, 7007);
 checkcontent($dir1, $f1);
 print "OK\n";
 
-print "Write into the middle of an existing file: ";
-writeat($dir1, $f1, 190);
-checkcontent($dir1, $f1);
-print "OK\n";
 
-print "Write beyond the end of an existing file: ";
-writeat($dir1, $f1, 65536);
-checkcontent($dir1, $f1);
-print "OK\n";
 
 print "Check that one cannot open non-existant file: ";
 checknot($dir1, "z-$$-z");
@@ -83,6 +87,11 @@ print "OK\n";
 
 print "Check directory listing on second server: ";
 dircheck($dir2);
+print "OK\n";
+
+print "Write beyond the end of an existing file: ";
+writeat($dir1, $f1, 65536);
+checkcontent($dir1, $f1);
 print "OK\n";
 
 print "Passed all tests\n";
@@ -119,6 +128,8 @@ sub checkcontent {
       $c2 .= $_;
     }
     close(F);
+    print STDERR "$c2 *******\n";
+    print STDERR "$files->{$name}  *******\n";
     $files->{$name} eq $c2 or die "content of $f is incorrect\n";
 }
 

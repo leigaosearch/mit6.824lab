@@ -18,7 +18,7 @@ lock_client::lock_client(std::string dst)
   }
 }
 
-int
+  int
 lock_client::stat(lock_protocol::lockid_t lid)
 {
   int r;
@@ -27,13 +27,20 @@ lock_client::stat(lock_protocol::lockid_t lid)
   return r;
 }
 
-lock_protocol::status
+  lock_protocol::status
 lock_client::acquire(lock_protocol::lockid_t lid)
 {
+  int r;
+  lock_protocol::status ret = cl->call(lock_protocol::acquire, cl->id(), lid, r);
+  return r;
 }
 
-lock_protocol::status
+  lock_protocol::status
 lock_client::release(lock_protocol::lockid_t lid)
 {
+  int r;
+  lock_protocol::status ret = cl->call(lock_protocol::release, cl->id(), lid, r);
+  return r;
+
 }
 
