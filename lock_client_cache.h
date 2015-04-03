@@ -19,12 +19,21 @@ class lock_release_user {
   virtual ~lock_release_user() {};
 };
 
+enum LOCKSTATUS{
+  NONE = 0,
+  FREE,
+  ACQUIRING,
+  RELEASING,
+  LOCKED
+};
+
 class lock_client_cache : public lock_client {
  private:
   class lock_release_user *lu;
   int rlock_port;
   std::string hostname;
   std::string id;
+  std::map<lock_protocol::lockid_t, LOCKSTATUS> locks;  
  public:
   lock_client_cache(std::string xdst, class lock_release_user *l = 0);
   virtual ~lock_client_cache() {};

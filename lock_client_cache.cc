@@ -27,6 +27,15 @@ lock_client_cache::lock_client_cache(std::string xdst,
 lock_protocol::status
 lock_client_cache::acquire(lock_protocol::lockid_t lid)
 {
+  int r;
+  if(locks[lid] == NONE) {
+    lock_protocol::status ret = cl->call(lock_protocol::acquire, id, lid, r);
+    locks[lid] = ACQUIRING; 
+  } else if (locks[lid] == FREE) {
+    lock[lid] = LOCKED;
+  } else if ((locks[lid] == ACQUIRING)||(locks[lid] == RELEASING)) {
+  
+  }
   int ret = lock_protocol::OK;
   return lock_protocol::OK;
 }
@@ -35,14 +44,14 @@ lock_protocol::status
 lock_client_cache::release(lock_protocol::lockid_t lid)
 {
   return lock_protocol::OK;
-
 }
-
+//Your client code will need to remember the fact that the revoke has arrived, and release the lock as soon as you are done with it. The same situation can arise with retry RPCs, which can arrive at the client before the corresponding acquire returns the RETRY failure code.
 rlock_protocol::status
 lock_client_cache::revoke_handler(lock_protocol::lockid_t lid, 
                                   int &)
 {
   int ret = rlock_protocol::OK;
+  
   return ret;
 }
 

@@ -10,13 +10,13 @@
 #include "tprintf.h"
 
 
-lock_server_cache::lock_server_cache()
-{
+lock_server_cache::lock_server_cache() {
+
 }
 
 
 int lock_server_cache::acquire(lock_protocol::lockid_t lid, std::string id, 
-                               int &)
+                               int & r)
 {
   lock_protocol::status ret = lock_protocol::OK;
   return ret;
