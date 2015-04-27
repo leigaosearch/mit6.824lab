@@ -32,6 +32,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
   int r;
   if (locks.count(lid) <= 0) { }
   std::unique_lock<std::mutex> lock(locks[lid].m);
+  lock.lock();
   while(1) {
     if(locks[lid].status == NONE) {
       lock_protocol::status ret = cl->call(lock_protocol::acquire, id, lid, r);
@@ -61,6 +62,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
 
     }
   }
+  lock.unlock();
   return lock_protocol::OK;
 }
 
@@ -68,10 +70,12 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
 lock_client_cache::release(lock_protocol::lockid_t lid)
 {
   std::unique_lock<std::mutex> guard(locks[lid].m);
+  lock.lock();
   if(locks[lid].status == LOCKED) {
     locks[lid].status = FREE;
     locks[lid].cv.notify_all();
   }
+  lock.unlock();
 
   return lock_protocol::OK;
 }
@@ -83,8 +87,10 @@ lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
   int ret = rlock_protocol::OK;
   // send a signal to release the lock
   std::unique_lock<std::mutex> lock(revokequeuemutex);
+  lock.lock();
   revokequeue.push(lid);
   revokequeuecv.notify_all();
+  lock.unlock();
   return ret;
 }
 
@@ -94,9 +100,11 @@ lock_client_cache::retry_handler(lock_protocol::lockid_t lid,
 {
   int ret = rlock_protocol::OK;
   std::unique_lock<std::mutex> lock(retryqueuemutex);
+  lock.lock();
   // get the retry will acquire again.
   retryqueue.push(lid);
   retryqueuecv.notify_all();
+  lock.unlock();
   return ret;
 }
 
@@ -123,7 +131,6 @@ void lock_client_cache::revokethread() {
         if (locks[lid].status == NONE) {
           locks.erase(lid);
         }
-
     }
   }
 }
@@ -144,5 +151,3 @@ void lock_client_cache::retrythread() {
     }
   }
 }
-
-
