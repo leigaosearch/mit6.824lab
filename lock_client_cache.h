@@ -33,7 +33,6 @@ enum LOCKSTATUS {
 struct CacheLock {
   LOCKSTATUS status;
   std::mutex m;
-  std::condition_variable cv;
 };
 
 class lock_client_cache : public lock_client {
@@ -48,7 +47,7 @@ class lock_client_cache : public lock_client {
   std::mutex revokequeuemutex;
   std::condition_variable revokequeuecv;
   std::queue<lock_protocol::lockid_t> revokequeue;
-  std::map<lock_protocol::lockid_t, CacheLock> locks;  
+  std::map<lock_protocol::lockid_t, CacheLock*> locks;  
  public:
   lock_client_cache(std::string xdst, class lock_release_user *l = 0);
   virtual ~lock_client_cache() {};
@@ -60,6 +59,7 @@ class lock_client_cache : public lock_client {
                                        int &);
   void retrythread();
   void revokethread();
+  cheLock* getlockid();
 };
 
 
