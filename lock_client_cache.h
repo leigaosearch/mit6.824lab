@@ -59,7 +59,7 @@ class lock_client_cache : public lock_client {
                                        int &);
   void retrythread();
   void revokethread();
-  cheLock* getlockid();
+  CacheLock* getlockid();
 };
 
 

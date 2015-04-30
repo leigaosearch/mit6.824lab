@@ -34,7 +34,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
    auto plock = new CacheLock;
    locks.insert(std::pair<lock_protocol::lockid_t, CacheLock*>(lid,plock));
   }
-  std::unique_lock<std::mutex>(locks[lid]->m);
+  std::unique_lock<std::mutex> lock(locks[lid]->m);
   
   while(1) {
     lock.lock();
@@ -76,7 +76,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
   lock_protocol::status
 lock_client_cache::release(lock_protocol::lockid_t lid)
 {
-  std::unique_lock<std::mutex> guard(locks[lid]->m);
+  std::unique_lock<std::mutex> lock(locks[lid]->m);
   lock.lock();
   if(locks[lid]->status == LOCKED) {
     locks[lid]->status = FREE;
@@ -113,7 +113,7 @@ lock_client_cache::retry_handler(lock_protocol::lockid_t lid,
   // get the retry will acquire again.
   retryqueue.push(lid);
   retryqueuecv.notify_all();
-  lock.unlock()
+  lock.unlock();
   return ret;
 }
 
