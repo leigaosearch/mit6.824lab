@@ -55,12 +55,17 @@ check_release(lock_protocol::lockid_t lid)
 void
 test1(void)
 {
+    printf ("sleep\n");
+    sleep(3);
     printf ("acquire a release a acquire a release a\n");
     lc[0]->acquire(a);
+    printf ("acquire a finished\n");
     check_grant(a);
     lc[0]->release(a);
+    printf ("release a finished\n");
     check_release(a);
     lc[0]->acquire(a);
+    printf ("acquire a finished\n");
     check_grant(a);
     lc[0]->release(a);
     check_release(a);

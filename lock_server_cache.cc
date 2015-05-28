@@ -5,12 +5,17 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <map>
 #include "lang/verify.h"
 #include "handle.h"
 #include "tprintf.h"
 
-
-lock_server_cache::lock_server_cache() {
+lock_server_cache::lock_server_cache():lock_server(){
+  rpcs *rlsrpc = new rpcs(0);
+  tprintf("contstruct\n");
+  std::thread(revokethread);
+  tprintf("contstruct revokethread\n");
+  std::thread(retrythread);
 
 }
 
@@ -19,6 +24,23 @@ int lock_server_cache::acquire(lock_protocol::lockid_t lid, std::string id,
                                int & r)
 {
   lock_protocol::status ret = lock_protocol::OK;
+  std::unique_lock<std::mutex> lock(lock_cache_mutex);
+  if (cachelocks.count(lid) == 0) {
+    auto plock = new lock_cache;
+    plock->state = LOCKED;
+    plock->ownerid = id;
+    cachelocks.insert(std::make_pair(lid, plock));
+    ret = lock_protocol::OK;
+  } else if (cachelocks[lid]->state == FREE) {
+    cachelocks[lid]->state = LOCKED;
+    cachelocks[lid]->ownerid = id;
+    ret = lock_protocol::OK;
+  } else if (cachelocks[lid]->state == LOCKED) {
+    cachelocks[lid]->waitinglist.push(id);
+    revokequeue.push(std::make_pair(cachelocks[lid]->ownerid,lid));
+    revokecv.notify_one();
+    ret = lock_protocol::RETRY;
+  }
   return ret;
 }
 
@@ -26,6 +48,14 @@ int
 lock_server_cache::release(lock_protocol::lockid_t lid, std::string id, 
          int &r)
 {
+  std::unique_lock<std::mutex> lock(lock_cache_mutex);
+  if(cachelocks[lid]->state == LOCKED) {
+    cachelocks[lid]->state = FREE;
+  }
+
+  retryqueue.push(std::make_pair(id,lid));
+  retrycv.notify_one();
+  //notify list
   lock_protocol::status ret = lock_protocol::OK;
   return ret;
 }
@@ -38,3 +68,49 @@ lock_server_cache::stat(lock_protocol::lockid_t lid, int &r)
   return lock_protocol::OK;
 }
 
+void lock_server_cache::retrythread() {
+  while(1) {
+    std::unique_lock<std::mutex> lock(retryqueuemutex);
+    rlock_protocol::status ret;
+    retrycv.wait(lock);
+    while (!retryqueue.empty()) {
+      auto e = retryqueue.front();
+      auto lid = e.second;
+      auto q = cachelocks[lid]->waitinglist;
+      auto qe = q.front();
+      q.pop();
+      handle h(qe);
+      int r;
+      if (h.safebind()) 
+        auto ret = h.safebind()->call(rlock_protocol::retry, lid, r);
+        //xxx todo
+      if (!h.safebind() || ret != rlock_protocol::OK) 
+                tprintf("retry RPC failed\n");
+      
+    }
+  }
+
+}
+
+void lock_server_cache::revokethread() {
+  int r;
+  rlock_protocol::status ret;
+  while (1) {
+    std::unique_lock<std::mutex> lock(revokequeuemutex);
+    rlock_protocol::status ret;
+    revokecv.wait(lock);
+    while (!revokequeue.empty()) {
+      auto e = revokequeue.front();
+      auto cliid = e.first;
+      auto lid = e.second;
+      revokequeue.pop();
+      handle h(cliid);
+      if (h.safebind())
+        auto ret = h.safebind()->call(rlock_protocol::revoke, lid, r);
+      if (!h.safebind() || ret != rlock_protocol::OK) 
+                tprintf("revoke RPC failed\n");
+    }
+
+  }
+
+}
