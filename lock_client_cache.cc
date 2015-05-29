@@ -33,46 +33,38 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
   int r;
   printf("enter acquire\n");
   if (cachelocks.count(lid) <= 0) {
-   auto plock = new CacheLock;
-   plock->status = NONE;
-   cachelocks.insert(std::pair<lock_protocol::lockid_t, CacheLock*>(lid,plock));
+    auto plock = new CacheLock;
+    plock->status = NONE;
+    cachelocks.insert(std::pair<lock_protocol::lockid_t, CacheLock*>(lid,plock));
   }
   printf("enter acquire loop\n");
   lock_protocol::status ret ;
-  while(1) {
-    std::unique_lock<std::mutex> locka(cachelocks[lid]->m);
-     //printf("enter lock.lock finished\n");
-    if(cachelocks[lid]->status == NONE) {
-      printf("cl->call(lock_protocol::acquire, id, lid, r\n");
-      ret = cl->call(lock_protocol::acquire, lid, id, r);
-      cachelocks[lid]->status = ACQUIRING;
-      if (ret == lock_protocol::OK) {
-        printf("enter acquire ret OK\n");
-        cachelocks[lid]->status = LOCKED;
-        break;
-      } else if (ret == lock_protocol::RETRY) {
-        //cachelocks[lid]->cv.wait(lock,[]{return true;});
-         printf("enter acquire ret RETRY\n");
-        if (FREE == cachelocks[lid]->status) {
-          cachelocks[lid]->status = LOCKED;
-          break;
-        }
-        continue;
-      }
-    } else if (cachelocks[lid]->status == FREE) {
+  std::unique_lock<std::mutex> locka(cachelocks[lid]->m);
+  //printf("enter lock.lock finished\n");
+  if(cachelocks[lid]->status == NONE) {
+    printf("cl->call(lock_protocol::acquire, id, lid, r\n");
+    ret = cl->call(lock_protocol::acquire, lid, id, r);
+    cachelocks[lid]->status = ACQUIRING;
+    if (ret == lock_protocol::OK) {
+      printf("enter acquire ret OK\n");
       cachelocks[lid]->status = LOCKED;
-      break;
-    } else {
-      //cachelocks[lid]->cv.wait(lock, []{return true;});
-      printf("ret = %d\n", ret);
-      if (FREE == cachelocks[lid]->status) {
-          cachelocks[lid]->status = LOCKED;
-          break;
-      } else {
-        continue;
-      }
 
+    } else if (ret == lock_protocol::RETRY) {
+      //cachelocks[lid]->cv.wait(lock,[]{return true;});
+      printf("enter acquire ret RETRY\n");
+      if (FREE == cachelocks[lid]->status) {
+        cachelocks[lid]->status = ACQUIRING;
+      }
     }
+  } else if (cachelocks[lid]->status == FREE) {
+    cachelocks[lid]->status = LOCKED;
+  } else {
+    //cachelocks[lid]->cv.wait(lock, []{return true;});
+    printf("ret = %d\n", ret);
+    if (FREE == cachelocks[lid]->status) {
+      cachelocks[lid]->status = LOCKED;
+    }
+
   }
   return lock_protocol::OK;
 }
@@ -80,13 +72,15 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
   lock_protocol::status
 lock_client_cache::release(lock_protocol::lockid_t lid)
 { 
+  int r, ret;
   printf("enter release\n");
   std::unique_lock<std::mutex> lock(cachelocks[lid]->m);
   if(cachelocks[lid]->status == LOCKED) {
     cachelocks[lid]->status = FREE;
+    ret = cl->call(lock_protocol::release, lid, id, r);
     //cachelocks[lid]->cv.notify_all();
   } else {
-    
+    tprintf("release error %d\n",cachelocks[lid]->status);
   }
   return lock_protocol::OK;
 }
