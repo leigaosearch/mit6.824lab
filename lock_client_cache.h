@@ -41,6 +41,8 @@ class lock_client_cache : public lock_client {
   int rlock_port;
   std::string hostname;
   std::string id;
+  std::thread rk;
+  std::thread rt;
   std::mutex retryqueuemutex;
   std::condition_variable retryqueuecv;
   std::queue<lock_protocol::lockid_t> retryqueue;

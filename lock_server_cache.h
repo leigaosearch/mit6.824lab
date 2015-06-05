@@ -29,6 +29,8 @@ class lock_server_cache :lock_server{
      std::queue<std::string> waitinglist;
      //std::queue<std::string> retryingIDs;
   };
+  std::thread rk;
+  std::thread rt;
   std::mutex retryqueuemutex;
   std::mutex revokequeuemutex;
   std::condition_variable retrycv;

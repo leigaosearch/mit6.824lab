@@ -22,9 +22,9 @@ lock_client_cache::lock_client_cache(std::string xdst,
   host << hname << ":" << rlsrpc->port();
   id = host.str();
   tprintf("contstruct\n");
-  std::thread(revokethread);
+  rk = std::thread(&lock_client_cache::revokethread,this);
   tprintf("contstruct revokethread\n");
-  std::thread(retrythread);
+  rt = std::thread (&lock_client_cache::retrythread,this);
 }
 
   lock_protocol::status
@@ -80,7 +80,7 @@ lock_client_cache::release(lock_protocol::lockid_t lid)
     ret = cl->call(lock_protocol::release, lid, id, r);
     //cachelocks[lid]->cv.notify_all();
   } else {
-    tprintf("release error %d\n",cachelocks[lid]->status);
+    printf("release error %d\n",cachelocks[lid]->status);
   }
   return lock_protocol::OK;
 }
@@ -128,11 +128,13 @@ void lock_client_cache::revokethread() {
 lock_client_cache::retry_handler(lock_protocol::lockid_t lid, 
     int &)
 {
+  tprintf("%d retry\n",lid);
   int ret = rlock_protocol::OK;
   std::unique_lock<std::mutex> lock(retryqueuemutex);
   // get the retry will acquire again.
   retryqueue.push(lid);
   retryqueuecv.notify_all();
+  
   return ret;
 }
 
@@ -145,8 +147,10 @@ void lock_client_cache::retrythread() {
     retryqueuecv.wait(lock,[]{return true;});
     while(!retryqueue.empty()) {
       auto lid =  retryqueue.front();
+      tprintf("%d retry\n",lid);
       retryqueue.pop();
       lock_protocol::status ret = cl->call(lock_protocol::acquire, id, lid, r);
+      tprintf("retry %d thread call acquire\n",lid);
       if(ret ==  rlock_protocol::OK) {
         cachelocks[lid]->status = LOCKED;
       }
