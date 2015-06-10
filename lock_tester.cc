@@ -14,7 +14,7 @@
 #include "lock_client_cache.h"
 
 // must be >= 2
-int nt = 2; //XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.
+int nt = 4; //XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.
 std::string dst;
 lock_client_cache **lc = new lock_client_cache * [nt];
 lock_protocol::lockid_t a = 1;
@@ -34,7 +34,6 @@ check_grant(lock_protocol::lockid_t lid)
   int x = lid & 0xff;
   if(ct[x] != 0){
     fprintf(stderr, "error: server granted %016llx twice\n", lid);
-    fprintf(stdout, "error: server granted %016llx twice\n", lid);
     exit(1);
   }
   ct[x] += 1;

@@ -28,16 +28,19 @@ int lock_server_cache::acquire(lock_protocol::lockid_t lid, std::string id,
   std::unique_lock<std::mutex> lock(lock_cache_mutex);
   tprintf("get client %s acquire request lock %d\n", id.c_str(), lid);
   if (cachelocks.count(lid) == 0) {
+    tprintf("lid not exsit %s acquire request lock %d\n", id.c_str(), lid);
     auto plock = new lock_cache;
     plock->state = LOCKED;
     plock->ownerid = id;
     cachelocks.insert(std::make_pair(lid, plock));
     ret = lock_protocol::OK;
   } else if (cachelocks[lid]->state == FREE) {
+    tprintf("lock free %s acquire request lock %d\n", id.c_str(), lid);
     cachelocks[lid]->state = LOCKED;
     cachelocks[lid]->ownerid = id;
     ret = lock_protocol::OK;
   } else if (cachelocks[lid]->state == LOCKED) {
+    tprintf("client %s lock %d was locked return RETRY\n", id.c_str(), lid);
     cachelocks[lid]->waitinglist.push(id);
     revokequeue.push(std::make_pair(cachelocks[lid]->ownerid,lid));
     revokecv.notify_one();
@@ -79,13 +82,13 @@ void lock_server_cache::retrythread() {
     retrycv.wait(lock);
     while (!retryqueue.empty()) {
       auto e = retryqueue.front();
+      retryqueue.pop();
       auto lid = e.second;
-      auto q = cachelocks[lid]->waitinglist;
-      auto qe = q.front();
-      q.pop();
+      auto qe = cachelocks[lid]->waitinglist.front();
+      cachelocks[lid]->waitinglist.pop();
       handle h(qe);
       int r;
-      printf("server call  retry %d\n",  lid);
+      printf("server call client %s retry %d\n", qe.c_str(), lid);
       if (h.safebind()) 
         auto ret = h.safebind()->call(rlock_protocol::retry, lid, r);
         //xxx todo
@@ -111,9 +114,13 @@ void lock_server_cache::revokethread() {
     tprintf("server revoke return\n");
     while (!revokequeue.empty()) {
       auto e = revokequeue.front();
-      auto cliid = e.first;
       auto lid = e.second;
-      printf("server call  revoke %d\n",  lid);
+      if(cachelocks[lid]->state == REVOKING) {
+        continue;
+      }
+      auto cliid = cachelocks[lid]->ownerid;
+      printf("server call  %s revoke %d\n",  cliid.c_str(),lid);
+      cachelocks[lid]->state = REVOKING;
       revokequeue.pop();
       handle h(cliid);
       if (h.safebind())

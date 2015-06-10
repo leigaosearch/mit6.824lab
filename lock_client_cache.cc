@@ -31,36 +31,41 @@ lock_client_cache::lock_client_cache(std::string xdst,
 lock_client_cache::acquire(lock_protocol::lockid_t lid)
 {
   int r;
-  printf("enter acquire\n");
+  printf("%s,enter acquire\n",id.c_str());
   if (cachelocks.count(lid) <= 0) {
     auto plock = new CacheLock;
     plock->status = NONE;
     cachelocks.insert(std::pair<lock_protocol::lockid_t, CacheLock*>(lid,plock));
   }
-  printf("enter acquire loop\n");
+  printf("%s enter acquire loop\n",id.c_str());
   lock_protocol::status ret ;
   std::unique_lock<std::mutex> locka(cachelocks[lid]->m);
   //printf("enter lock.lock finished\n");
   if(cachelocks[lid]->status == NONE) {
-    printf("cl->call(lock_protocol::acquire, id, lid, r\n");
+    printf("%s cl->call(lock_protocol::acquire, id, lid, r\n",id.c_str());
     ret = cl->call(lock_protocol::acquire, lid, id, r);
-    cachelocks[lid]->status = ACQUIRING;
+    //cachelocks[lid]->status = ACQUIRING;
     if (ret == lock_protocol::OK) {
-      printf("enter acquire ret OK\n");
+      printf("%s enter acquire ret OK\n",id.c_str());
       cachelocks[lid]->status = LOCKED;
 
     } else if (ret == lock_protocol::RETRY) {
       //cachelocks[lid]->cv.wait(lock,[]{return true;});
-      printf("enter acquire ret RETRY\n");
-      if (FREE == cachelocks[lid]->status) {
-        cachelocks[lid]->status = ACQUIRING;
+      printf("%senter acquire ret RETRY\n",id.c_str());
+      //if (FREE == cachelocks[lid]->status) {
+      //  cachelocks[lid]->status = ACQUIRING;
+      //}
+      while(cachelocks[lid]->status != LOCKED) {
+        if(cachelocks[lid]->status == FREE) {
+          cachelocks[lid]->status = LOCKED ;
+        }
       }
     }
   } else if (cachelocks[lid]->status == FREE) {
     cachelocks[lid]->status = LOCKED;
   } else {
     //cachelocks[lid]->cv.wait(lock, []{return true;});
-    printf("ret = %d\n", ret);
+    printf("%s ret = %d\n", id.c_str(),ret);
     if (FREE == cachelocks[lid]->status) {
       cachelocks[lid]->status = LOCKED;
     }
@@ -73,14 +78,14 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
 lock_client_cache::release(lock_protocol::lockid_t lid)
 { 
   int r, ret;
-  printf("enter release\n");
+  printf("%senter release\n",id.c_str());
   std::unique_lock<std::mutex> lock(cachelocks[lid]->m);
   if(cachelocks[lid]->status == LOCKED) {
     cachelocks[lid]->status = FREE;
-    ret = cl->call(lock_protocol::release, lid, id, r);
+    //ret = cl->call(lock_protocol::release, lid, id, r);
     //cachelocks[lid]->cv.notify_all();
   } else {
-    printf("release error %d\n",cachelocks[lid]->status);
+    printf("%s release error %d\n",id.c_str(),cachelocks[lid]->status);
   }
   return lock_protocol::OK;
 }
@@ -101,22 +106,23 @@ lock_client_cache::revoke_handler(lock_protocol::lockid_t lid,
 // freed cachelocks that have been revoked by the server, so that it can
 // send a release RPC.
 void lock_client_cache::revokethread() {
-  printf("revokethread begin\n");
+  printf("%s revokethread begin\n",id.c_str());
   int r;
   while(1) {
     std::unique_lock<std::mutex> lock(revokequeuemutex);
     revokequeuecv.wait(lock,[]{return true;});
     while (!revokequeue.empty()) {
       auto lid = revokequeue.front();
-      revokequeue.pop();
       if (cachelocks[lid]->status == FREE) {
+        tprintf("\n %s lid %d call release ipc\n",id.c_str(),lid);
         lock_protocol::status ret = cl->call(lock_protocol::release, lid, id, r);
         if (ret ==  lock_protocol::OK) {
+          revokequeue.pop();
           cachelocks[lid]->status = NONE;
+          tprintf("\n %s lid %d free\n",id.c_str(),lid);
           break;      
         }
       } else {
-        tprintf("error in revokethread");
       }
 
 
@@ -128,7 +134,7 @@ void lock_client_cache::revokethread() {
 lock_client_cache::retry_handler(lock_protocol::lockid_t lid, 
     int &)
 {
-  tprintf("%d retry\n",lid);
+  tprintf("id = %s,%d retry\n",id.c_str(),lid);
   int ret = rlock_protocol::OK;
   std::unique_lock<std::mutex> lock(retryqueuemutex);
   // get the retry will acquire again.
@@ -147,13 +153,12 @@ void lock_client_cache::retrythread() {
     retryqueuecv.wait(lock,[]{return true;});
     while(!retryqueue.empty()) {
       auto lid =  retryqueue.front();
-      tprintf("%d retry\n",lid);
+      tprintf("%s lid %d retry\n",id.c_str(),lid);
+      lock_protocol::status ret = cl->call(lock_protocol::acquire, lid, id, r);
+      tprintf("%s retry %d thread call acquire\n",id.c_str(),lid);
+      tprintf("%s retry %d thread call acquire ret = %d\n",id.c_str(),lid,ret);
+      cachelocks[lid]->status = LOCKED;
       retryqueue.pop();
-      lock_protocol::status ret = cl->call(lock_protocol::acquire, id, lid, r);
-      tprintf("retry %d thread call acquire\n",lid);
-      if(ret ==  rlock_protocol::OK) {
-        cachelocks[lid]->status = LOCKED;
-      }
 
     }
   }
