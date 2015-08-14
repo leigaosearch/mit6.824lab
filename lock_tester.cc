@@ -55,7 +55,7 @@ void
 test1(void)
 {
     printf ("sleep\n");
-    sleep(3);
+  
     printf ("acquire a release a acquire a release a\n");
     lc[0]->acquire(a);
     printf ("acquire a finished\n");
@@ -180,9 +180,9 @@ main(int argc, char *argv[])
     for (int i = 0; i < nt; i++) lc[i] = new lock_client_cache(dst);
 
     if(!test || test == 1){
-      test1();
+      //test1();
     }
-
+#if 0
     if(!test || test == 2){
       // test2
       for (int i = 0; i < nt; i++) {
@@ -194,7 +194,7 @@ main(int argc, char *argv[])
 	pthread_join(th[i], NULL);
       }
     }
-
+#endif
     if(!test || test == 3){
       printf("test 3\n");
       

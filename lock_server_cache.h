@@ -26,17 +26,18 @@ class lock_server_cache :lock_server{
   struct lock_cache {
      lock_state state;
      std::string ownerid;
+     std::string retryingid;
      std::queue<std::string> waitinglist;
      //std::queue<std::string> retryingIDs;
   };
   std::thread rk;
   std::thread rt;
   std::mutex retryqueuemutex;
-  std::mutex revokequeuemutex;
+  std::mutex revokelistmutex;
   std::condition_variable retrycv;
   std::condition_variable revokecv;
   std::queue<std::pair<std::string,lock_protocol::lockid_t>> retryqueue;
-  std::queue<std::pair<std::string,lock_protocol::lockid_t>> revokequeue;
+  std::list<std::pair<std::string,lock_protocol::lockid_t>> revokelist;
 
   std::map<lock_protocol::lockid_t, lock_cache*> cachelocks;
   std::mutex lock_cache_mutex;
