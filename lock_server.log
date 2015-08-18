@@ -1,0 +1,6 @@
+1438673884510:	contstruct
+1438673884510:	contstruct revokethread
+1438673884511:	server revoke thread begin
+server retry thread begin
+rpcs::dispatch: failed to unmarshall the arguments. You are probably calling RPC 0x7001 with wrong types of arguments.
+lock_server: rpc/rpc.cc:597: void rpcs::dispatch(rpcs::djob_t*): Assertion `0' failed.

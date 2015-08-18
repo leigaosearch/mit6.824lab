@@ -327,6 +327,7 @@ dircheck(const char *d, int nf)
   int nnames = 0, i;
 
   dp = opendir(d);
+  printf("Open dir %s\n", d);
   if(dp == 0){
     fprintf(stderr, "test-lab-3-b: opendir(%s): %s\n", d, strerror(errno));
     exit(1);
@@ -409,8 +410,12 @@ main(int argc, char *argv[])
     big[i] = 'x';
   for(i = 0; i < sizeof(huge)-1; i++)
     huge[i] = '0';
+  
+  //dircheck(d1, 1);
 
   printf("Create then read: ");
+  
+  
   create1(d1, "f1", "aaa");
   check1(d2, "f1", "aaa");
   check1(d1, "f1", "aaa");
@@ -437,7 +442,10 @@ main(int argc, char *argv[])
   printf("OK\n");
 
   printf("Append: ");
+  checknot(d2, "f1");
+  printf("create1 d2 f1: ");
   create1(d2, "f1", "aaa");
+  printf("pass create1 d2 \n");
   append1(d1, "f1", "bbb");
   append1(d2, "f1", "ccc");
   check1(d1, "f1", "aaabbbccc");
