@@ -32,7 +32,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
 {
   int r;
   printf("%s,enter acquire\n",id.c_str());
-  std::unique_lock<std::mutex> lockcache(cachelocksmutex);
+  //std::unique_lock<std::mutex> lockcache(cachelocksmutex);
   printf("before new a lock %d count %d\n", lid, cachelocks.count(lid));
   if (cachelocks.count(lid) <= 0) {
     printf("new a lock %d\n", lid);
@@ -71,6 +71,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
       break;
     } else {
       //cachelocks[lid]->cv.wait(lock, []{return true;});
+      tprintf("%s  waiting cv is %d...............\n", id.c_str(),cachelocks[lid]->status);
       cachelocks[lid]->lockcv.wait(locka);
       tprintf("%s ACQUIRING status is %d...............\n", id.c_str(),cachelocks[lid]->status);
       if (FREE == cachelocks[lid]->status) {
@@ -87,21 +88,24 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
 lock_client_cache::release(lock_protocol::lockid_t lid)
 {  
   int r, ret;
-  printf("%s release %d\n",id.c_str(),lid);
-  std::unique_lock<std::mutex> lockcache(cachelocksmutex);
-  printf("lockcache(cachelocksmutex)\n");
+  tprintf("%s release %d\n",id.c_str(),lid);
+  //std::unique_lock<std::mutex> lockcache(cachelocksmutex);
+  tprintf("lockcache(cachelocksmutex)\n");
   std::unique_lock<std::mutex> lock(cachelocks[lid]->m);
-  printf(" lock(cachelocks[lid]->m\n");
+  tprintf(" lock(cachelocks[lid]->m\n");
   if (cachelocks[lid]->status == RELEASING) {
     // tell revoke thread to call release the lock
     cachelocks[lid]->revokecv.notify_one();
-    printf("%s release  %d OK\n",id.c_str(),lid);
+    tprintf("%s release  %d OK\n",id.c_str(),lid);
   } else if (cachelocks[lid]->status == LOCKED) {
+    tprintf("%s release sucess  %d OK\n",id.c_str(),lid);
+    cachelocks[lid]->revokecv.notify_one();
     cachelocks[lid]->status = FREE;
   }
   else {
-    printf("%s release error %d\n",id.c_str(),cachelocks[lid]->status);
+    tprintf("%s release error %d\n",id.c_str(),cachelocks[lid]->status);
   }
+  tprintf("%s release return %d\n",id.c_str(),lid);
   return lock_protocol::OK;
 }
 //Your client code will need to remember the fact that the revoke has arrived, and release the lock as soon as you are done with it. The same situation can arise with retry RPCs, which can arrive at the client before the corresponding acquire returns the RETRY failure code.

@@ -141,6 +141,7 @@ test5(void *x)
     check_grant(a);
     printf ("test5: client %d got lock\n", i);
     check_release(a);
+    printf ("test5: client %d release lock\n", i);
     if (i < 5) lc[0]->release(a);
     else lc[1]->release(a);
   }
