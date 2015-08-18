@@ -125,6 +125,7 @@ test4(void *x)
     printf ("test4: thread %d on client 0 got lock\n", i);
     check_release(a);
     lc[0]->release(a);
+    printf ("test4: thread %d on client 0 release lock\n", i);
   }
   return 0;
 }
@@ -214,12 +215,12 @@ main(int argc, char *argv[])
       printf("test 4\n");
       
       // test 4
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < nt; i++) {
 	int *a = new int (i);
 	r = pthread_create(&th[i], NULL, test4, (void *) a);
 	VERIFY (r == 0);
       }
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < nt; i++) {
 	pthread_join(th[i], NULL);
       }
     }

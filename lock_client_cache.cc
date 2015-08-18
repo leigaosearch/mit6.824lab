@@ -31,17 +31,17 @@ lock_client_cache::lock_client_cache(std::string xdst,
 lock_client_cache::acquire(lock_protocol::lockid_t lid)
 {
   int r;
-  printf("%s,enter acquire\n",id.c_str());
+  tprintf("%s,enter acquire\n",id.c_str());
   //std::unique_lock<std::mutex> lockcache(cachelocksmutex);
-  printf("before new a lock %d count %d\n", lid, cachelocks.count(lid));
+  tprintf("before new a lock %d count %d\n", lid, cachelocks.count(lid));
   if (cachelocks.count(lid) <= 0) {
-    printf("new a lock %d\n", lid);
+    tprintf("new a lock %d\n", lid);
     auto plock = new CacheLock;
     plock->status = NONE;
     cachelocks.insert(std::pair<lock_protocol::lockid_t, CacheLock*>(lid,plock));
-    printf("new a lock %d count %d\n", lid, cachelocks.count(lid));
+    tprintf("new a lock %d count %d\n", lid, cachelocks.count(lid));
   }
-  printf("%s enter acquire loop status = %d\n", id.c_str(), cachelocks[lid]->status);
+  tprintf("%s enter acquire loop status = %d\n", id.c_str(), cachelocks[lid]->status);
   lock_protocol::status ret ;
   
   //printf("enter lock.lock finished\n");
@@ -49,17 +49,18 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
     std::unique_lock<std::mutex> locka(cachelocks[lid]->m);
     if(cachelocks[lid]->status == NONE) {
       cachelocks[lid]->status = ACQUIRING;
-      printf("%s cl->call(lock_protocol::acquire, %d, lid, %dr\n",id.c_str(), lid);
+      tprintf("%s cl->call(lock_protocol::acquire, %d, lid, %dr\n",id.c_str(), lid);
       ret = cl->call(lock_protocol::acquire, lid, id, r);
       if (ret == lock_protocol::OK) {
         cachelocks[lid]->status = LOCKED;
-        printf("%s enter acquire ret OK status %d\n",id.c_str(), cachelocks[lid]->status);
+        tprintf("%s enter acquire ret OK status %d\n",id.c_str(), cachelocks[lid]->status);
         break;
       } else if (ret == lock_protocol::RETRY) {
-        printf("% senter acquire ret RETRY\n",id.c_str());
+        tprintf("% senter acquire ret RETRY\n",id.c_str());
           cachelocks[lid]->lockcv.wait(locka, []{return true;});
           tprintf("%s %d cachelocks[lid]->status =%d\n",id.c_str(), lid,cachelocks[lid]->status);
           if(cachelocks[lid]->status == FREE) {
+            tprintf("changed: %s %d cachelocks[lid]->status =%d\n",id.c_str(), lid,cachelocks[lid]->status);
             cachelocks[lid]->status = LOCKED ;
             break;
           }
@@ -67,7 +68,7 @@ lock_client_cache::acquire(lock_protocol::lockid_t lid)
       }
     } else if (cachelocks[lid]->status == FREE) {
       cachelocks[lid]->status = LOCKED;
-      printf("%s status = %d ret OK and locked\n", id.c_str(), cachelocks[lid]->status);
+      tprintf("%s status = %d ret OK and locked\n", id.c_str(), cachelocks[lid]->status);
       break;
     } else {
       //cachelocks[lid]->cv.wait(lock, []{return true;});
@@ -95,14 +96,17 @@ lock_client_cache::release(lock_protocol::lockid_t lid)
   tprintf(" lock(cachelocks[lid]->m\n");
   if (cachelocks[lid]->status == RELEASING) {
     // tell revoke thread to call release the lock
-    cachelocks[lid]->revokecv.notify_one();
+    cachelocks[lid]->revokecv.notify_all();
     tprintf("%s release  %d OK\n",id.c_str(),lid);
   } else if (cachelocks[lid]->status == LOCKED) {
     tprintf("%s release sucess  %d OK\n",id.c_str(),lid);
-    cachelocks[lid]->revokecv.notify_one();
     cachelocks[lid]->status = FREE;
+    cachelocks[lid]->lockcv.notify_all();
+    
   }
   else {
+    cachelocks[lid]->status = FREE;
+    cachelocks[lid]->lockcv.notify_all();
     tprintf("%s release error %d\n",id.c_str(),cachelocks[lid]->status);
   }
   tprintf("%s release return %d\n",id.c_str(),lid);
