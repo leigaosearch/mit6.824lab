@@ -1,7 +1,7 @@
 // yfs client.  implements FS operations using extent and lock server
 #include "yfs_client.h"
 #include "extent_client.h"
-#include "lock_client.h"
+#include "lock_client_cache.h"
 #include <sstream>
 #include <iostream>
 #include <stdio.h>
@@ -10,8 +10,18 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
-
+class mylock_release_user:public lock_release_user {
+  private:
+    extent_client *ec;
+  public:
+    mylock_release_user(extent_client *_ec) {
+      ec = _ec;
+    }
+    virtual void dorelease(lock_protocol::lockid_t id) {
+      ec->flush(id);
+   }
+  
+};
 int limited_rand(int limit)
 {
   int r, d = RAND_MAX / limit;
@@ -62,7 +72,8 @@ yfs_client::inum yfs_client::new_inum(bool file){
 yfs_client::yfs_client(std::string extent_dst, std::string lock_dst)
 {
   ec = new extent_client(extent_dst);
-  lc = new lock_client(lock_dst);
+  lu = new mylock_release_user(ec);
+  lc = new lock_client_cache(lock_dst,lu);
   const inum root = 0x00000001;
   std::string buf("/root/" + filename(root));
   ec->put(root, buf);

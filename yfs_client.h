@@ -9,9 +9,12 @@
 #include "lock_protocol.h"
 #include "lock_client.h"
 
+class mylock_release_user;
+
 class yfs_client {
   extent_client *ec;
   lock_client *lc;
+  mylock_release_user *lu;
  public:
 
   typedef unsigned long long inum;

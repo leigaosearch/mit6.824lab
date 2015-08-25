@@ -145,7 +145,7 @@ void lock_client_cache::revokethread() {
         cachelocks[lid]->revokecv.wait(mylock);
       }
       
-
+      lu->dorelease(lid);
       tprintf("\n %s lid %d call release ipc\n",id.c_str(),lid);
       lock_protocol::status ret = cl->call(lock_protocol::release, lid, id, r);
       if (ret ==  lock_protocol::OK) {
