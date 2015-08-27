@@ -6,6 +6,8 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <mutex>
+
 #include "extent_protocol.h"
 
 class extent_server {
@@ -25,6 +27,7 @@ class extent_server {
   std::map<extent_protocol::extentid_t, std::string> files;
   //std::map<extent_protocol::extentid_t, std::shared_ptr<extent_value>> extentobjs;
   std::map<extent_protocol::extentid_t, extent_protocol::attr> extentattrs;
+  std::mutex m;
 };
 
 #endif 

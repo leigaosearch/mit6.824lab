@@ -340,6 +340,7 @@ int yfs_client::lookup(inum p_inum, const char *name, inum &c_inum) {
   auto namefound = p_buf.find(name);
   if (namefound == std::string::npos) {
     r = NOENT;
+    printf("p_inum name no entry  %016llx\n", p_inum);
     goto release;
   }
   firstfound = p_buf.find('/',namefound);
@@ -398,9 +399,10 @@ yfs_client::remove(inum num) {
 yfs_client::status
 yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool isfile) {
   int r = NOENT;
+  lc->acquire(parent);
   if( isdir(parent) ) {
     std::string content;
-    lc->acquire(parent);
+    
     //get parent infor
     if (ec->get(parent, content) != extent_protocol::OK) {
       std::cout << "get parent info: *******error" << std::endl;
@@ -437,7 +439,7 @@ yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool 
     // - Add a <name, ino> entry into @parent.
     ec->put(ii,content);
     // - Create an empty extent for ino.
-    lc->acquire(filenum);
+    //lc->acquire(filenum);
     if(isfile) {
         ec->put(filenum,std::string(""));
     }
@@ -445,7 +447,7 @@ yfs_client::create(yfs_client::inum parent, const char * name, inum &fnum, bool 
       printf("  fuseserver_mkdir:  %s\n", sname.c_str());
       ec->put(filenum,sname+filename(filenum));
     }
-    lc->release(filenum);
+    //lc->release(filenum);
     lc->release(parent);
 
     //set entry parameters

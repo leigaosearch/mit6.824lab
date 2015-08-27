@@ -321,6 +321,7 @@ main(int argc, char *argv[])
   }
 
   {
+    sleep(3);
     char dd[512];
     sprintf(dd, "%s/da%d", argv[2], getpid());
     if(access(dd, 0) != 0){

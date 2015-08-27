@@ -7,7 +7,8 @@
 #include <map>
 #include "extent_protocol.h"
 #include "rpc.h"
-
+#include <thread>
+#include <mutex>
 
 class extent_client {
   struct extent_cachevalue{
@@ -22,6 +23,7 @@ class extent_client {
  private:
   rpcc *cl;
   std::map<extent_protocol::extentid_t, extent_cachevalue*> extent_cache;
+  std::mutex cachemutex;
  public:
   extent_client(std::string dst);
 

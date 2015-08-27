@@ -18,6 +18,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   //std::lock_guard<std::
   int num = extentattrs.count(id);
   auto t = time(NULL);
+  std::lock_guard<std::mutex> lc(m);
   if (num == 0) {
     extent_protocol::attr a;
     a.atime = t;
@@ -39,7 +40,7 @@ int extent_server::put(extent_protocol::extentid_t id, std::string buf, int &)
   }
 
   files[id] = buf;
-  printf("%s",buf.c_str());
+  printf("%s\n",buf.c_str());
   return extent_protocol::OK;
 }
 
@@ -47,6 +48,7 @@ int extent_server::get(extent_protocol::extentid_t id, std::string &buf)
 {
   int num = extentattrs.count(id);
   // You fill this in for Lab 2.
+  std::lock_guard<std::mutex> lc(m);
   printf("extent server get id = %llu\n",id);
   if (num == 0) {
     printf("not exist\n");
@@ -67,6 +69,7 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
   // unmount) if getattr fails.
   int num = extentattrs.count(id);
   // You fill this in for Lab 2.
+  std::lock_guard<std::mutex> lc(m);
   if (num == 0) {
     printf("**not exist\n");
     return extent_protocol::NOENT;
@@ -83,6 +86,7 @@ int extent_server::getattr(extent_protocol::extentid_t id, extent_protocol::attr
 int extent_server::remove(extent_protocol::extentid_t id, int &)
 {
   // You fill this in for Lab 2.
+  std::lock_guard<std::mutex> lc(m);
   auto it = extentattrs.find(id);
   // You fill this in for Lab 2.
   if (it == extentattrs.end()) {
