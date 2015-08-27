@@ -6,7 +6,7 @@
  * high-level interface only gives us complete paths.
  */
 
-#include <fuse_lowlevel.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -15,8 +15,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <fuse_lowlevel.h>
 #include "lang/verify.h"
 #include "yfs_client.h"
+using namespace std;
 
 int myid;
 yfs_client *yfs;
@@ -43,9 +45,9 @@ getattr(yfs_client::inum inum, struct stat &st)
   yfs_client::status ret;
 
   bzero(&st, sizeof(st));
+  printf("   getfileattr -> \n");
 
   st.st_ino = inum;
-  printf("getattr %016llx %d\n", inum, yfs->isfile(inum));
   if(yfs->isfile(inum)){
      yfs_client::fileinfo info;
      ret = yfs->getfile(inum, info);
@@ -57,7 +59,7 @@ getattr(yfs_client::inum inum, struct stat &st)
      st.st_mtime = info.mtime;
      st.st_ctime = info.ctime;
      st.st_size = info.size;
-     printf("   getattr -> %llu\n", info.size);
+     printf("   fileattr -> %llu\n", info.size);
    } else {
      yfs_client::dirinfo info;
      ret = yfs->getdir(inum, info);
@@ -68,7 +70,7 @@ getattr(yfs_client::inum inum, struct stat &st)
      st.st_atime = info.atime;
      st.st_mtime = info.mtime;
      st.st_ctime = info.ctime;
-     printf("   getattr -> %lu %lu %lu\n", info.atime, info.mtime, info.ctime);
+     printf("   dirattr -> %lu %lu %lu\n", info.atime, info.mtime, info.ctime);
    }
    return yfs_client::OK;
 }
@@ -93,7 +95,7 @@ fuseserver_getattr(fuse_req_t req, fuse_ino_t ino,
                    struct fuse_file_info *fi)
 {
     struct stat st;
-    yfs_client::inum inum = ino; // req->in.h.nodeid;
+    yfs_client::inum inum = ino; 
     yfs_client::status ret;
 
     ret = getattr(inum, st);
@@ -122,13 +124,31 @@ fuseserver_setattr(fuse_req_t req, fuse_ino_t ino, struct stat *attr,
                    int to_set, struct fuse_file_info *fi)
 {
   printf("fuseserver_setattr 0x%x\n", to_set);
+  yfs_client::inum inum = ino;
+  yfs_client::fileinfo info;
+  yfs_client::status ret;
   if (FUSE_SET_ATTR_SIZE & to_set) {
-    printf("   fuseserver_setattr set size to %zu\n", attr->st_size);
+    printf("fuseserver_setattr set size to %zu\n", attr->st_size);
     struct stat st;
     // You fill this in for Lab 2
-#if 0
+#if 1
+    info.size = attr->st_size;
+    ret = yfs->setattr(inum, info);
+    if (ret != yfs_client::OK) {
+      printf("set attr failed\n");
+      fuse_reply_err(req, ENOENT);
+      return;
+    }
+    
+    ret = getattr(inum, st);
+    if(ret != yfs_client::OK) {
+      printf("get attr failed\n");
+      fuse_reply_err(req, ENOENT);
+      return;
+    }
     // Change the above line to "#if 1", and your code goes here
     // Note: fill st using getattr before fuse_reply_attr
+    printf("Set attr success\n");
     fuse_reply_attr(req, &st, 0);
 #else
     fuse_reply_err(req, ENOSYS);
@@ -155,10 +175,25 @@ fuseserver_read(fuse_req_t req, fuse_ino_t ino, size_t size,
                 off_t off, struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
-#if 0
+  yfs_client::inum inum = ino;
   std::string buf;
+  if (yfs->isfile(inum)) {
+    yfs_client::fileinfo fin;
+    if(yfs->getfile(inum, fin) == yfs_client::OK) {
+      if (off < 0 || off >= fin.size) {
+        fuse_reply_err(req, EINVAL);
+      }
+      else {
+        if (yfs->read(inum,buf,off,size) == yfs_client::OK) {
+            fuse_reply_buf(req, buf.data(), buf.size());
+            return;
+        }
+      }
+    }
+  }
+  fuse_reply_err(req, ENOSYS);
+#if 1
   // Change the above "#if 0" to "#if 1", and your code goes here
-  fuse_reply_buf(req, buf.data(), buf.size());
 #else
   fuse_reply_err(req, ENOSYS);
 #endif
@@ -185,6 +220,22 @@ fuseserver_write(fuse_req_t req, fuse_ino_t ino,
                  struct fuse_file_info *fi)
 {
   // You fill this in for Lab 2
+  yfs_client::inum inum = ino;
+  yfs_client::fileinfo info;
+  yfs_client::status ret;
+  if (yfs->isfile(inum)) {
+    std::cout <<"off: " << off << "size: " << size<<'\n';
+    std::string sbuf(buf,size);
+
+    if(((ret = yfs->write(inum,sbuf,off,size))) != yfs_client::OK) {
+    std::cout << "error write\n";
+    fuse_reply_err(req, ENOSYS);
+    }
+    fuse_reply_write(req,size);
+    return;
+
+  }
+
 #if 0
   // Change the above line to "#if 1", and your code goes here
   fuse_reply_write(req, size);
@@ -215,13 +266,32 @@ yfs_client::status
 fuseserver_createhelper(fuse_ino_t parent, const char *name,
                         mode_t mode, struct fuse_entry_param *e)
 {
-  // In yfs, timeouts are always set to 0.0, and generations are always set to 0
-  e->attr_timeout = 0.0;
-  e->entry_timeout = 0.0;
-  e->generation = 0;
-  // You fill this in for Lab 2
-  return yfs_client::NOENT;
+  printf("fuseserver_createhelper name: %s\n",name);
+  yfs_client::inum fnum =0;
+  yfs_client::inum iparent = parent;
+  int r = yfs->create(iparent,name,fnum,true);
+    //set entry parameters
+    if(r == yfs_client::EXIST)
+      return r;
+    e->attr_timeout = 0.0;
+    e->entry_timeout = 0.0;
+    e->ino = fnum;
+    getattr(e->ino, e->attr);
+
+    //test insertion TODO remove
+    //get data
+    std::string data;
+    yfs->getdirdata(iparent, data);
+    printf("read tetestdata = %s\n",data.c_str());
+    return yfs_client::OK;
+
+  //printf("  seserver_createhelper !! parent is NOT A DIR\n");
+
+  // You fill this in
+  // return yfs_client::NOENT;
 }
+
+
 
 void
 fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,
@@ -230,11 +300,15 @@ fuseserver_create(fuse_req_t req, fuse_ino_t parent, const char *name,
   struct fuse_entry_param e;
   yfs_client::status ret;
   if( (ret = fuseserver_createhelper( parent, name, mode, &e )) == yfs_client::OK ) {
+    std::cout<<"create "<<parent<<"/"<<name<<"/"<<mode<<endl;;
     fuse_reply_create(req, &e, fi);
   } else {
 		if (ret == yfs_client::EXIST) {
+                  std::cout<<"create error EEXIST"<<endl;
 			fuse_reply_err(req, EEXIST);
 		}else{
+
+                  std::cout<<"create error ENOENT"<<endl;
 			fuse_reply_err(req, ENOENT);
 		}
   }
@@ -250,6 +324,7 @@ void fuseserver_mknod( fuse_req_t req, fuse_ino_t parent,
 		if (ret == yfs_client::EXIST) {
 			fuse_reply_err(req, EEXIST);
 		}else{
+                  printf("node exist\n");
 			fuse_reply_err(req, ENOENT);
 		}
   }
@@ -269,12 +344,61 @@ fuseserver_lookup(fuse_req_t req, fuse_ino_t parent, const char *name)
   e.entry_timeout = 0.0;
   e.generation = 0;
   bool found = false;
+  yfs_client::status ret;
+  yfs_client::inum p_inum = parent;
+  yfs_client::inum c_inum;
+  printf("fuseserver_lookup parent:%016lx name:%s\n", parent, name);  
+  ret = yfs->lookup(p_inum, name, c_inum);
+  if (ret == yfs_client::OK) {
+     struct stat st;
+     e.ino = c_inum;
+     if(getattr(c_inum, st) == yfs_client::OK)
+        e.attr = st;
+     found = true;
+  }
 
   // You fill this in for Lab 2
   if (found)
     fuse_reply_entry(req, &e);
   else
     fuse_reply_err(req, ENOENT);
+    /*
+    printf("name: %s\n", name);
+
+  // retreive what is in directory
+  std::string buffer;
+  yfs->getdirdata(parent, buffer);
+
+  // look for file name
+  int search = buffer.find(name);
+  printf("name is at index: %d\n", search);
+  ret = yfs->lookup(p_inum, name, c_inum);
+
+  if(search != -1){
+    found = true;
+  }
+
+  // parse directory contents for inum to update e
+  if (found){
+    buffer = buffer.substr(search, buffer.length());
+    buffer = buffer.substr(buffer.find("/") + 1, buffer.length());
+    buffer = buffer.substr(0, buffer.find("/"));
+    
+    // convert inum string to a long long unsigned
+    std::istringstream ist(buffer);
+    unsigned long long ino;
+    ist >> ino;
+
+    e.generation = 0;
+    e.ino = ino;
+    getattr(ino, e.attr);
+    
+    fuse_reply_entry(req, &e);
+
+  }
+  else {
+    fuse_reply_err(req, ENOENT);
+  }*/
 }
 
 
@@ -320,16 +444,59 @@ fuseserver_readdir(fuse_req_t req, fuse_ino_t ino, size_t size,
 {
   yfs_client::inum inum = ino; // req->in.h.nodeid;
   struct dirbuf b;
+  int index = 0;
 
   printf("fuseserver_readdir\n");
 
   if(!yfs->isdir(inum)){
     fuse_reply_err(req, ENOTDIR);
+    printf("fuseserver_readdir %d is not dir\n",inum);
     return;
   }
 
   memset(&b, 0, sizeof(b));
+   // get directory contents
+  std::string retrieve;
+  yfs->getdirdata(ino, retrieve);
+  printf("dir %s\n ", retrieve.c_str());
+  auto firstfound = retrieve.find("/");
+  printf("firstfound =%d\n",firstfound);
+  if(firstfound == std::string::npos) {
+    return;
+    }
+  auto secondfound = retrieve.find('/', firstfound+1);
+  retrieve = retrieve.substr(secondfound+1);
+  
+  // add file names to directory one by one
+  while(retrieve.length() > 0) {
 
+    //"/root/1"
+    firstfound = retrieve.find("/");
+    printf("firstfound =%d\n",firstfound);
+    if(firstfound == std::string::npos) {
+      break;
+    }
+    secondfound = retrieve.find('/', firstfound+1);
+    printf("secondfound =%d\n",secondfound);
+    if(secondfound == std::string::npos) {
+      break;
+    }
+    std::string file = retrieve.substr(firstfound+1,secondfound-firstfound-1);
+    printf("file added %s\n ", file.c_str());
+    dirbuf_add(&b, file.c_str(), ino);
+    retrieve = retrieve.substr(secondfound+1);
+
+
+#if 0
+    std::string file = retrieve.substr(1, retrieve.find("/")-1);
+    printf("file added %s\n ", file.c_str());
+    dirbuf_add(&b, file.c_str(), ino);
+    index = retrieve.find("/");
+    retrieve = retrieve.substr(index + 1, retrieve.length());
+    index = retrieve.find("/");
+    retrieve = retrieve.substr(index + 1, retrieve.length());
+#endif
+  }
 
   // You fill this in for Lab 2
 
@@ -368,8 +535,29 @@ fuseserver_mkdir(fuse_req_t req, fuse_ino_t parent, const char *name,
   // Suppress compiler warning of unused e.
   (void) e;
 
+
   // You fill this in for Lab 3
-#if 0
+  if( yfs->isdir(parent) )
+  {
+    yfs_client::status ret;
+    yfs_client::inum ii = parent;
+    struct stat st;
+    getattr(ii,st);
+    yfs_client::inum fnum = 0;
+    printf("mkdir name %s\n",name);
+    yfs->create(ii, name, fnum, false);
+    //set entry parameters
+    e.ino = fnum;
+    if(ret = getattr(fnum, st) == yfs_client::OK) {
+        e.attr = st;
+        printf("fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
+        }
+    else {
+        printf("wrong fuseserver_mkdir time m%d c%d a%d \n", st.st_mtime, st.st_ctime, st.st_atime);
+    }
+  }
+
+#if 1 
   fuse_reply_entry(req, &e);
 #else
   fuse_reply_err(req, ENOSYS);
@@ -390,7 +578,17 @@ fuseserver_unlink(fuse_req_t req, fuse_ino_t parent, const char *name)
   // You fill this in for Lab 3
   // Success:	fuse_reply_err(req, 0);
   // Not found:	fuse_reply_err(req, ENOENT);
-  fuse_reply_err(req, ENOSYS);
+  
+  //find name in parent contents
+  
+  //
+  if (yfs->unlink(parent,name) == yfs_client::OK) {
+    fuse_reply_err(req, 0);
+  }
+  else {
+    fuse_reply_err(req, ENOSYS);
+  }
+
 }
 
 void

@@ -31,6 +31,7 @@ main(int argc, char *argv[])
   }
 
   //jsl_set_debug(2);
+//<<<<<<< HEAD
   // Comment out the next line to switch between the ordinary lock
   // server and the RSM.  In Lab 6, we disable the lock server and
   // implement Paxos.  In Lab 7, we will make the lock server use your
@@ -39,6 +40,16 @@ main(int argc, char *argv[])
 #ifdef RSM
    rsm rsm(argv[1], argv[2]);
 #endif // RSM
+//=======
+
+#ifndef RSM
+  lock_server_cache ls;
+  rpcs server(atoi(argv[1]), count);
+  server.reg(lock_protocol::stat, &ls, &lock_server_cache::stat);
+  server.reg(lock_protocol::acquire, &ls, &lock_server_cache::acquire);
+  server.reg(lock_protocol::release, &ls, &lock_server_cache::release);
+#endif
+//>>>>>>> lab5
 
 
   while(1)

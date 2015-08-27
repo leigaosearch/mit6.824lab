@@ -14,7 +14,7 @@
 #include "lock_client_cache.h"
 
 // must be >= 2
-int nt = 6; //XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.
+int nt = 4; //XXX: lab1's rpc handlers are blocking. Since rpcs uses a thread pool of 10 threads, we cannot test more than 10 blocking rpc.
 std::string dst;
 lock_client_cache **lc = new lock_client_cache * [nt];
 lock_protocol::lockid_t a = 1;
@@ -34,7 +34,6 @@ check_grant(lock_protocol::lockid_t lid)
   int x = lid & 0xff;
   if(ct[x] != 0){
     fprintf(stderr, "error: server granted %016llx twice\n", lid);
-    fprintf(stdout, "error: server granted %016llx twice\n", lid);
     exit(1);
   }
   ct[x] += 1;
@@ -55,12 +54,17 @@ check_release(lock_protocol::lockid_t lid)
 void
 test1(void)
 {
+    printf ("sleep\n");
+  
     printf ("acquire a release a acquire a release a\n");
     lc[0]->acquire(a);
+    printf ("acquire a finished\n");
     check_grant(a);
     lc[0]->release(a);
+    printf ("release a finished\n");
     check_release(a);
     lc[0]->acquire(a);
+    printf ("acquire a finished\n");
     check_grant(a);
     lc[0]->release(a);
     check_release(a);
@@ -121,6 +125,7 @@ test4(void *x)
     printf ("test4: thread %d on client 0 got lock\n", i);
     check_release(a);
     lc[0]->release(a);
+    printf ("test4: thread %d on client 0 release lock\n", i);
   }
   return 0;
 }
@@ -137,6 +142,7 @@ test5(void *x)
     check_grant(a);
     printf ("test5: client %d got lock\n", i);
     check_release(a);
+    printf ("test5: client %d release lock\n", i);
     if (i < 5) lc[0]->release(a);
     else lc[1]->release(a);
   }
@@ -176,9 +182,9 @@ main(int argc, char *argv[])
     for (int i = 0; i < nt; i++) lc[i] = new lock_client_cache(dst);
 
     if(!test || test == 1){
-      test1();
+      //test1();
     }
-
+#if 0
     if(!test || test == 2){
       // test2
       for (int i = 0; i < nt; i++) {
@@ -190,7 +196,7 @@ main(int argc, char *argv[])
 	pthread_join(th[i], NULL);
       }
     }
-
+#endif
     if(!test || test == 3){
       printf("test 3\n");
       
@@ -209,12 +215,12 @@ main(int argc, char *argv[])
       printf("test 4\n");
       
       // test 4
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < nt; i++) {
 	int *a = new int (i);
 	r = pthread_create(&th[i], NULL, test4, (void *) a);
 	VERIFY (r == 0);
       }
-      for (int i = 0; i < 2; i++) {
+      for (int i = 0; i < nt; i++) {
 	pthread_join(th[i], NULL);
       }
     }
